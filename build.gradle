@@ -36,12 +36,19 @@ tasks.withType(JavaCompile).configureEach {
         options.release.set(targetJavaVersion)
     }
 }
+task.assembleRelease(type: Jar) {
+    dependsOn 'build'
+    group = 'build'
+    description = 'Creates the plugin jar file'
+    from(sourceSets.main.output)
+    destinationDirectory.set(file("build/libs"))
+}
 
 processResources {
     def props = [version: version]
     inputs.properties props
     filteringCharset 'UTF-8'
-    filesMatching('paper-plugin.yml') {
+    filesMatching('plugin.yml') {
         expand props
     }
 }
