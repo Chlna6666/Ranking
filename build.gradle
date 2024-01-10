@@ -36,13 +36,14 @@ tasks.withType(JavaCompile).configureEach {
         options.release.set(targetJavaVersion)
     }
 }
-task assembleRelease(type: Jar) {
-    dependsOn tasks.build
+tasks.register('assembleRelease', Jar) {
+    dependsOn tasks.getByName('build')
     group = 'build'
     description = 'Creates the plugin jar file'
     from(sourceSets.main.output)
     into("$buildDir/libs")
 }
+
 
 
 processResources {
