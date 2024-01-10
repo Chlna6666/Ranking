@@ -1,0 +1,345 @@
+package org.com.ranking;
+
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.*;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+
+public class Ranking extends JavaPlugin implements Listener {
+////////////////////////////////////////////////////////////////////
+//                          _ooOoo_                               //
+//                         o8888888o                              //
+//                         88" . "88                              //
+//                         (| ^_^ |)                              //
+//                         O\  =  /O                              //
+//                      ____/`---'\____                           //
+//                    .'  \\|     |//  `.                         //
+//                   /  \\|||  :  |||//  \                        //
+//                  /  _||||| -:- |||||-  \                       //
+//                  |   | \\\  -  /// |   |                       //
+//                  | \_|  ''\---/''  |   |                       //
+//                  \  .-\__  `-`  ___/-. /                       //
+//                ___`. .'  /--.--\  `. . ___                     //
+//              ."" '<  `.___\_<|>_/___.'  >'"".                  //
+//            | | :  `- \`.;`\ _ /`;.`/ - ` : | |                 //
+//            \  \ `-.   \_ __\ /__ _/   .-` /  /                 //
+//      ========`-.____`-.___\_____/___.-`____.-'========         //
+//                           `=---='                              //
+//      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        //
+//                  佛祖保佑   3+证书考试必过200分                    //
+////////////////////////////////////////////////////////////////////
+
+    private JSONObject playersData;
+    private JSONObject placeData;
+    private JSONObject destroysData;   //你说的是但是我就是分开写
+    private JSONObject deadsData;
+    private JSONObject onlinetimeData;
+    private File dataFile;
+    private File placeFile;
+    private File destroysFile;
+    private File deadsFile;
+    private File onlinetimeFile;
+
+    // 获取 playersData
+    public JSONObject getPlayersData() {
+        return playersData;
+    }
+    // 获取 dataFile
+    public File getDataFile() {
+        return dataFile;
+    }
+    public JSONObject getplaceData() {
+        return placeData;
+    }
+    public JSONObject getdestroysData() {
+        return destroysData;
+    }
+    public JSONObject getdeadsData() {
+        return deadsData;
+    }
+    public JSONObject getonlinetimeData() {
+        return onlinetimeData;
+    }
+    public static final String GREEN = "\u001B[0;33m";
+    public static final String RESET = "\u001B[0m";
+
+
+    @Override
+    public void onEnable() {
+        Bukkit.getLogger().info("");
+        Bukkit.getLogger().info(GREEN+" ______   ______   __   __   __  __   __   __   __   ______    "+RESET);
+        Bukkit.getLogger().info(GREEN+"/\\  == \\ /\\  __ \\ /\\ \"-.\\ \\ /\\ \\/ /  /\\ \\ /\\ \"-.\\ \\ /\\  ___\\   "+RESET);
+        Bukkit.getLogger().info(GREEN+"\\ \\  __< \\ \\  __ \\\\ \\ \\-.  \\\\ \\  _\"-.\\ \\ \\\\ \\ \\-.  \\\\ \\ \\__ \\  "+RESET);
+        Bukkit.getLogger().info(GREEN+" \\ \\_\\ \\_\\\\ \\_\\ \\_\\\\ \\_\\\\\"\\_\\\\ \\_\\ \\_\\\\ \\_\\\\ \\_\\\\\"\\_\\\\ \\_____\\ "+RESET);
+        Bukkit.getLogger().info(GREEN+"  \\/_/ /_/ \\/_/\\/_/ \\/_/ \\/_/ \\/_/\\/_/ \\/_/ \\/_/ \\/_/ \\/_____/ "+RESET);
+        Bukkit.getLogger().info("");
+
+
+
+        // 确保文件夹存在
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdir();
+        }
+
+
+        // 初始化数据文件
+        dataFile = new File(getDataFolder(), "data.json");
+        placeFile = new File(getDataFolder(), "place.json");
+        destroysFile = new File(getDataFolder(), "destroys.json");
+        deadsFile = new File(getDataFolder(), "deads.json");
+        onlinetimeFile = new File(getDataFolder(), "onlinetime.json");
+
+        if (!dataFile.exists() || dataFile.length() == 0) {
+            try (FileWriter writer = new FileWriter(dataFile)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (!placeFile.exists() || placeFile.length() == 0) {
+            try (FileWriter writer = new FileWriter(placeFile)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (!destroysFile.exists() || destroysFile.length() == 0) {
+            try (FileWriter writer = new FileWriter(destroysFile)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (!deadsFile.exists() || deadsFile.length() == 0) {
+            try (FileWriter writer = new FileWriter(deadsFile)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (!onlinetimeFile.exists() || onlinetimeFile.length() == 0) {
+            try (FileWriter writer = new FileWriter(onlinetimeFile)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+            // 保存数据
+        if (!dataFile.exists()) {
+             playersData = new JSONObject();
+             saveJSONAsync(playersData, dataFile);
+        } else {
+             playersData = loadJSON(dataFile);
+        }
+        if (!placeFile.exists()) {
+            placeData = new JSONObject();
+            saveJSONAsync(placeData, placeFile);
+        } else {
+            placeData = loadJSON(placeFile);
+        }
+        if (!destroysFile.exists()) {
+            destroysData = new JSONObject();
+            saveJSONAsync(destroysData, destroysFile);
+        } else {
+            destroysData = loadJSON(destroysFile);
+        }
+        if (!deadsFile.exists()) {
+            deadsData = new JSONObject();
+            saveJSONAsync(deadsData, deadsFile);
+        } else {
+            deadsData = loadJSON(deadsFile);
+        }
+        if (!onlinetimeFile.exists()) {
+            onlinetimeData = new JSONObject();
+            saveJSONAsync(onlinetimeData, onlinetimeFile);
+        } else {
+            onlinetimeData = loadJSON(onlinetimeFile);
+        }
+
+
+        // 注册事件监听器
+        getServer().getPluginManager().registerEvents(this, this);
+        // 注册命令
+        //Objects.requireNonNull(getCommand("ranking")).setExecutor(new RankingCommand(this));
+        PluginCommand rankingCommand = getCommand("ranking");
+
+        if (rankingCommand != null) {
+            CommandExecutor rankingExecutor = new RankingCommand(this);
+
+            rankingCommand.setExecutor(rankingExecutor);
+            rankingCommand.setTabCompleter(new RankingTabCompleter());
+        } else {
+            getLogger().warning("无法获取 /ranking 主命令！");
+        }
+
+
+    }
+
+
+
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+        //Bukkit.getLogger().warning("当前 placeData 的值：" + placeData.toJSONString());
+        // 更新放置数量
+        long placedBlocks = (long) placeData.getOrDefault(uuid.toString(), 0L);
+        placeData.put(uuid.toString(), placedBlocks + 1);
+        //Bukkit.getLogger().warning("修改后的 placeData 的值：" + placeData.toJSONString());
+        // 异步保存 placeData
+        saveJSONAsync(placeData, placeFile);
+        // 刷新计分板
+        updateScoreboards( player,"放置榜", placeData);
+    }
+
+    @EventHandler
+    public void onBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+        //Bukkit.getLogger().warning("当前 destroysData 的值：" + destroysData.toJSONString());
+        long destroysBlocks = (long) destroysData.getOrDefault(uuid.toString(), 0L);
+        destroysData.put(uuid.toString(), destroysBlocks + 1);
+        saveJSONAsync(destroysData, destroysFile);
+        updateScoreboards( player,"挖掘榜", destroysData);
+    }
+
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        UUID uuid = player.getUniqueId();
+        long deathCount = (long) deadsData.getOrDefault(uuid.toString(), 0L);
+        deadsData.put(uuid.toString(), deathCount + 1);
+        saveJSONAsync(deadsData, deadsFile);
+        updateScoreboards(player, "死亡榜", deadsData);
+    }
+
+
+
+
+    public void updateScoreboards(Player player,String sidebarTitle, Map<String, Long> data) {
+        UUID uuid = player.getUniqueId();
+        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+        Scoreboard globalScoreboard = scoreboardManager.getNewScoreboard();
+        Objective objective = globalScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        for (Map.Entry<String, Long> entry : data.entrySet()) {
+            String uuidString = entry.getKey();
+            long placedBlocks = entry.getValue();
+
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
+            if (offlinePlayer != null) {
+                String playerName = offlinePlayer.getName();
+
+                Score score = objective.getScore(playerName);
+                score.setScore((int) placedBlocks);
+            }
+        }
+
+        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
+        Number placeValue = (Number) playerData.getOrDefault("place", 0);
+
+        if (placeValue.intValue() == 1) {
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                onlinePlayer.setScoreboard(globalScoreboard);
+            }
+        }
+
+    }
+
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+        String playerName = player.getName();
+
+        // 如果玩家数据中没有这个 UUID 的记录，说明是第一次进入服务器
+        if (!playersData.containsKey(uuid.toString())) {
+            JSONObject playerInfo = new JSONObject();
+            playerInfo.put("name", playerName);
+            playersData.put(uuid.toString(), playerInfo);
+            // 保存玩家数据到文件
+            saveJSONAsync(playersData,dataFile);
+        } else {
+            // 玩家不是第一次进入服务器，检查玩家名称是否发生变化
+            JSONObject storedPlayerInfo = (JSONObject) playersData.get(uuid.toString());
+            String storedName = (String) storedPlayerInfo.get("name");
+
+            // 如果存储的名称和当前名称不同，更新存储的名称
+            if (!storedName.equals(playerName)) {
+                storedPlayerInfo.put("name", playerName);
+                // 保存玩家数据到文件
+                saveJSONAsync(playersData,dataFile);
+            }
+        }
+
+        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
+        Number placeValue = (Number) playerData.getOrDefault("place", 0);
+
+        if (placeValue.intValue() == 1) {
+            updateScoreboards(player,"放置榜", placeData);
+        }
+
+
+
+    }
+
+
+
+
+    private JSONObject loadJSON(File file) {
+        JSONParser parser = new JSONParser();
+        try (FileReader reader = new FileReader(file)) {
+            return (JSONObject) parser.parse(reader);
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+            return new JSONObject();
+        }
+    }
+
+
+    public void saveJSONAsync(JSONObject json, File file) {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.write(json.toJSONString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void saveJSON(JSONObject json, File file) {
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(json.toJSONString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+}
