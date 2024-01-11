@@ -3,10 +3,7 @@ package org.com.ranking;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -14,7 +11,9 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -25,7 +24,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Ranking extends JavaPlugin implements Listener {
 ////////////////////////////////////////////////////////////////////
@@ -82,6 +81,9 @@ public class Ranking extends JavaPlugin implements Listener {
     public JSONObject getonlinetimeData() {
         return onlinetimeData;
     }
+
+    private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<UUID, BukkitRunnable>();
+
     public static final String GREEN = "\u001B[0;33m";
     public static final String RESET = "\u001B[0m";
 
@@ -196,8 +198,10 @@ public class Ranking extends JavaPlugin implements Listener {
             getLogger().warning("无法获取 /ranking 主命令！");
         }
 
-
     }
+
+
+
 
 
 
@@ -264,11 +268,11 @@ public class Ranking extends JavaPlugin implements Listener {
         JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
         Number placeValue = (Number) playerData.getOrDefault("place", 0);
 
-        if (placeValue.intValue() == 1) {
+
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 onlinePlayer.setScoreboard(globalScoreboard);
             }
-        }
+
 
     }
 
@@ -278,6 +282,8 @@ public class Ranking extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         String playerName = player.getName();
+
+
 
         // 如果玩家数据中没有这个 UUID 的记录，说明是第一次进入服务器
         if (!playersData.containsKey(uuid.toString())) {
@@ -301,16 +307,63 @@ public class Ranking extends JavaPlugin implements Listener {
 
         JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
         Number placeValue = (Number) playerData.getOrDefault("place", 0);
+        Number destroysValue = (Number) playerData.getOrDefault("destroys", 0);
+        Number deadsValue = (Number) playerData.getOrDefault("deads", 0);
+        Number onlinetimeValue = (Number) playerData.getOrDefault("onlinetime", 0);
 
         if (placeValue.intValue() == 1) {
-            updateScoreboards(player,"放置榜", placeData);
+            updateScoreboards(player, "放置榜", placeData);
+        }
+        if (destroysValue.intValue() == 1) {
+            updateScoreboards(player, "挖掘榜", destroysData);
+        }
+        if (deadsValue.intValue() == 1) {
+            updateScoreboards(player, "死亡榜", deadsData);
+        }
+        if (onlinetimeValue.intValue() == 1) {
+            updateScoreboards(player, "时长榜", onlinetimeData);
         }
 
+        // 创建并启动计时器
+        BukkitRunnable timer = new BukkitRunnable() {
+            @Override
+            public void run() {
+                long onlineTime = (long) onlinetimeData.getOrDefault(uuid.toString(), 0L);
+                onlinetimeData.put(uuid.toString(), onlineTime + 1);
 
+                // 异步保存在线时间数据到文件
+                saveJSONAsync(onlinetimeData, onlinetimeFile);
+
+                // 将更新计分板的任务发送到主线程
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // 更新计分板
+                        updateScoreboards(player, "时长榜", onlinetimeData);
+                    }
+                }.runTask(Ranking.this);
+            }
+        };
+
+        // 将计时器加入Map
+        onlineTimers.put(uuid, timer);
+
+        // 启动计时器，以 ticks 为单位，表示一分钟后开始执行，每分钟执行一次
+        timer.runTaskTimer(Ranking.this, 1200, 1200);
 
     }
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
 
-
+        // 检查是否有计时器，如果有则取消
+        BukkitRunnable timer = onlineTimers.get(uuid);
+        if (timer != null) {
+            timer.cancel();
+            onlineTimers.remove(uuid);  // 在玩家退出时从Map中移除计时器
+        }
+    }
 
 
     private JSONObject loadJSON(File file) {
