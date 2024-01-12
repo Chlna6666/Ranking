@@ -257,6 +257,14 @@ public class Ranking extends JavaPlugin implements Listener {
 
     public void updateScoreboards(Player player, String sidebarTitle, Map<String, Long> data, String dataType) {
         UUID uuid = player.getUniqueId();
+        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
+
+        // 检查该积分板是否在配置中开启
+        Number scoreboardConfig = (Number) playerData.getOrDefault(dataType, 0);
+        if (scoreboardConfig.intValue() != 1) {
+            return;  // 积分板未开启，直接返回
+        }
+
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         Scoreboard playerScoreboard = scoreboardManager.getNewScoreboard();
         Objective objective = playerScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
@@ -264,27 +272,55 @@ public class Ranking extends JavaPlugin implements Listener {
 
         for (Map.Entry<String, Long> entry : data.entrySet()) {
             String uuidString = entry.getKey();
-            long value = entry.getValue();
+            long rankingdata = entry.getValue();
 
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
             if (offlinePlayer != null) {
                 String playerName = offlinePlayer.getName();
 
                 Score score = objective.getScore(playerName);
-                score.setScore((int) value);
+                score.setScore((int) rankingdata);
             }
         }
 
-        // 将每位玩家的计分板保存到对应的数据类型
-        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
-        playerData.put(dataType, playerScoreboard);
-
-        // 如果玩家在线，则向其刷新计分板
-        if (player.isOnline()) {
-            player.setScoreboard(playerScoreboard);
-        }
+        // 设置玩家的 Scoreboard
+        player.setScoreboard(playerScoreboard);
     }
 
+
+
+    /*public void updateScoreboards(Player player,String sidebarTitle, Map<String, Long> data) {
+        UUID uuid = player.getUniqueId();
+        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+        Scoreboard globalScoreboard = scoreboardManager.getNewScoreboard();
+        Objective objective = globalScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
+        for (Map.Entry<String, Long> entry : data.entrySet()) {
+            String uuidString = entry.getKey();
+            long placedBlocks = entry.getValue();
+
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
+            if (offlinePlayer != null) {
+                String playerName = offlinePlayer.getName();
+
+                Score score = objective.getScore(playerName);
+                score.setScore((int) placedBlocks);
+            }
+        }
+
+        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
+        Number placeValue = (Number) playerData.getOrDefault("place", 0);
+
+
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            onlinePlayer.setScoreboard(globalScoreboard);
+        }
+
+
+    }
+
+     */
 
 
     @EventHandler
@@ -379,12 +415,20 @@ public class Ranking extends JavaPlugin implements Listener {
     private JSONObject loadJSON(File file) {
         JSONParser parser = new JSONParser();
         try (FileReader reader = new FileReader(file)) {
-            return (JSONObject) parser.parse(reader);
+            Object parsedObject = parser.parse(reader);
+            if (parsedObject instanceof JSONObject) {
+                return (JSONObject) parsedObject;
+            } else {
+                Bukkit.getLogger().warning("Error loading JSON from file " + file.getName() + ": The root element is not a JSON object.");
+                return new JSONObject();
+            }
         } catch (IOException | ParseException e) {
+            Bukkit.getLogger().warning("Error loading JSON from file " + file.getName() + ": " + e.getMessage());
             e.printStackTrace();
             return new JSONObject();
         }
     }
+
 
 
     public void saveJSONAsync(JSONObject json, File file) {
