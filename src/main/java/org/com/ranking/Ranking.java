@@ -99,6 +99,16 @@ public class Ranking extends JavaPlugin implements Listener {
         Bukkit.getLogger().info("");
 
 
+        Bukkit.getLogger().info("");
+        Bukkit.getLogger().info(GREEN+"██████╗  █████╗ ███╗   ██╗██╗  ██╗██╗███╗   ██╗ ██████╗ "+RESET);
+        Bukkit.getLogger().info(GREEN+"██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝██║████╗  ██║██╔════╝ "+RESET);
+        Bukkit.getLogger().info(GREEN+"██████╔╝███████║██╔██╗ ██║█████╔╝ ██║██╔██╗ ██║██║  ███╗"+RESET);
+        Bukkit.getLogger().info(GREEN+"██╔══██╗██╔══██║██║╚██╗██║██╔═██╗ ██║██║╚██╗██║██║   ██║"+RESET);
+        Bukkit.getLogger().info(GREEN+"██║  ██║██║  ██║██║ ╚████║██║  ██╗██║██║ ╚████║╚██████╔╝"+RESET);
+        Bukkit.getLogger().info(GREEN+"╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝"+RESET);
+        Bukkit.getLogger().info("");
+
+
 
         // 确保文件夹存在
         if (!getDataFolder().exists()) {
@@ -218,7 +228,7 @@ public class Ranking extends JavaPlugin implements Listener {
         // 异步保存 placeData
         saveJSONAsync(placeData, placeFile);
         // 刷新计分板
-        updateScoreboards( player,"放置榜", placeData);
+        updateScoreboards( player,"放置榜", placeData,"place");
     }
 
     @EventHandler
@@ -229,7 +239,7 @@ public class Ranking extends JavaPlugin implements Listener {
         long destroysBlocks = (long) destroysData.getOrDefault(uuid.toString(), 0L);
         destroysData.put(uuid.toString(), destroysBlocks + 1);
         saveJSONAsync(destroysData, destroysFile);
-        updateScoreboards( player,"挖掘榜", destroysData);
+        updateScoreboards( player,"挖掘榜", destroysData,"destroys");
     }
 
     @EventHandler
@@ -239,42 +249,42 @@ public class Ranking extends JavaPlugin implements Listener {
         long deathCount = (long) deadsData.getOrDefault(uuid.toString(), 0L);
         deadsData.put(uuid.toString(), deathCount + 1);
         saveJSONAsync(deadsData, deadsFile);
-        updateScoreboards(player, "死亡榜", deadsData);
+        updateScoreboards(player, "死亡榜", deadsData,"deads");
     }
 
 
 
 
-    public void updateScoreboards(Player player,String sidebarTitle, Map<String, Long> data) {
+    public void updateScoreboards(Player player, String sidebarTitle, Map<String, Long> data, String dataType) {
         UUID uuid = player.getUniqueId();
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
-        Scoreboard globalScoreboard = scoreboardManager.getNewScoreboard();
-        Objective objective = globalScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
+        Scoreboard playerScoreboard = scoreboardManager.getNewScoreboard();
+        Objective objective = playerScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         for (Map.Entry<String, Long> entry : data.entrySet()) {
             String uuidString = entry.getKey();
-            long placedBlocks = entry.getValue();
+            long value = entry.getValue();
 
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
             if (offlinePlayer != null) {
                 String playerName = offlinePlayer.getName();
 
                 Score score = objective.getScore(playerName);
-                score.setScore((int) placedBlocks);
+                score.setScore((int) value);
             }
         }
 
+        // 将每位玩家的计分板保存到对应的数据类型
         JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
-        Number placeValue = (Number) playerData.getOrDefault("place", 0);
+        playerData.put(dataType, playerScoreboard);
 
-
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                onlinePlayer.setScoreboard(globalScoreboard);
-            }
-
-
+        // 如果玩家在线，则向其刷新计分板
+        if (player.isOnline()) {
+            player.setScoreboard(playerScoreboard);
+        }
     }
+
 
 
     @EventHandler
@@ -312,16 +322,16 @@ public class Ranking extends JavaPlugin implements Listener {
         Number onlinetimeValue = (Number) playerData.getOrDefault("onlinetime", 0);
 
         if (placeValue.intValue() == 1) {
-            updateScoreboards(player, "放置榜", placeData);
+            updateScoreboards(player, "放置榜", placeData,"place");
         }
         if (destroysValue.intValue() == 1) {
-            updateScoreboards(player, "挖掘榜", destroysData);
+            updateScoreboards(player, "挖掘榜", destroysData,"destroys");
         }
         if (deadsValue.intValue() == 1) {
-            updateScoreboards(player, "死亡榜", deadsData);
+            updateScoreboards(player, "死亡榜", deadsData,"deads");
         }
         if (onlinetimeValue.intValue() == 1) {
-            updateScoreboards(player, "时长榜", onlinetimeData);
+            updateScoreboards(player, "时长榜", onlinetimeData,"onlinetime");
         }
 
         // 创建并启动计时器
@@ -339,7 +349,7 @@ public class Ranking extends JavaPlugin implements Listener {
                     @Override
                     public void run() {
                         // 更新计分板
-                        updateScoreboards(player, "时长榜", onlinetimeData);
+                        updateScoreboards(player, "时长榜", onlinetimeData,"onlinetime");
                     }
                 }.runTask(Ranking.this);
             }

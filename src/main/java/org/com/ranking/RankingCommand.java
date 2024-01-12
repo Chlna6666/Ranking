@@ -51,7 +51,7 @@ public class RankingCommand implements CommandExecutor {
                 player.sendMessage("计分板已开启！");
 
                 // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"放置榜", pluginInstance.getplaceData());
+                pluginInstance.updateScoreboards(player,"放置榜", pluginInstance.getplaceData(),"place");
                 Bukkit.getLogger().info("pluginInstance.getplaceData(): " + pluginInstance.getplaceData());
             } else {
                 player.sendMessage("计分板已关闭！");
@@ -70,7 +70,7 @@ public class RankingCommand implements CommandExecutor {
                 clearScoreboard(player);
                 player.sendMessage("计分板已开启！");
                 // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"挖掘榜", pluginInstance.getdestroysData());
+                pluginInstance.updateScoreboards(player,"挖掘榜", pluginInstance.getdestroysData(),"destroys");
             } else {
                 player.sendMessage("计分板已关闭！");
                 clearScoreboard(player); // 清空计分板
@@ -88,7 +88,7 @@ public class RankingCommand implements CommandExecutor {
                 clearScoreboard(player);
                 player.sendMessage("计分板已开启！");
                 // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"死亡榜", pluginInstance.getdeadsData());
+                pluginInstance.updateScoreboards(player,"死亡榜", pluginInstance.getdeadsData(),"deads");
             } else {
                 player.sendMessage("计分板已关闭！");
                 clearScoreboard(player); // 清空计分板
@@ -106,7 +106,7 @@ public class RankingCommand implements CommandExecutor {
                 clearScoreboard(player);
                 player.sendMessage("计分板已开启！");
                 // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"时长榜", pluginInstance.getonlinetimeData());
+                pluginInstance.updateScoreboards(player,"时长榜", pluginInstance.getonlinetimeData(),"onlinetime");
             } else {
                 player.sendMessage("计分板已关闭！");
                 clearScoreboard(player); // 清空计分板
