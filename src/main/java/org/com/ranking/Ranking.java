@@ -25,6 +25,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class Ranking extends JavaPlugin implements Listener {
 ////////////////////////////////////////////////////////////////////
@@ -257,6 +258,7 @@ public class Ranking extends JavaPlugin implements Listener {
 
     public void updateScoreboards(Player player, String sidebarTitle, Map<String, Long> data, String dataType) {
         UUID uuid = player.getUniqueId();
+
         JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
 
         // 检查该积分板是否在配置中开启
@@ -264,6 +266,15 @@ public class Ranking extends JavaPlugin implements Listener {
         if (scoreboardConfig.intValue() != 1) {
             return;  // 积分板未开启，直接返回
         }
+
+        // 获取dataType为1的在线玩家
+        List<Player> dataTypeOnePlayers = Bukkit.getOnlinePlayers().stream()
+                .filter(p -> {
+                    JSONObject pPlayerData = (JSONObject) playersData.getOrDefault(p.getUniqueId().toString(), new JSONObject());
+                    Number pScoreboardConfig = (Number) pPlayerData.getOrDefault(dataType, 0);
+                    return pScoreboardConfig.intValue() == 1;
+                })
+                .collect(Collectors.toList());
 
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         Scoreboard playerScoreboard = scoreboardManager.getNewScoreboard();
@@ -283,8 +294,10 @@ public class Ranking extends JavaPlugin implements Listener {
             }
         }
 
-        // 设置玩家的 Scoreboard
-        player.setScoreboard(playerScoreboard);
+        // 设置指定玩家的 Scoreboard
+        for (Player onlinePlayer : dataTypeOnePlayers) {
+            onlinePlayer.setScoreboard(playerScoreboard);
+        }
     }
 
 
