@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.json.simple.JSONObject;
 
 import java.util.Arrays;
@@ -182,8 +183,11 @@ public class RankingCommand implements CommandExecutor {
 
 
 
-
     private void clearScoreboard(Player player) {
+        Bukkit.getLogger().warning("Player player  " + player);
+        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+        Scoreboard newScoreboard = scoreboardManager.getNewScoreboard();  // 创建新的空白记分板
+        player.setScoreboard(newScoreboard);  // 将新的空白记分板设置给玩家
         Scoreboard scoreboard = player.getScoreboard();
         if (scoreboard != null) {
             Objective objective = scoreboard.getObjective(DisplaySlot.SIDEBAR);
@@ -192,6 +196,9 @@ public class RankingCommand implements CommandExecutor {
             }
         }
     }
+
+
+
 
 
 
