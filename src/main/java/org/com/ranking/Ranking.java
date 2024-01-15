@@ -259,14 +259,6 @@ public class Ranking extends JavaPlugin implements Listener {
     public void updateScoreboards(Player player, String sidebarTitle, Map<String, Long> data, String dataType) {
         UUID uuid = player.getUniqueId();
 
-        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
-
-        // 检查该积分板是否在配置中开启
-        Number scoreboardConfig = (Number) playerData.getOrDefault(dataType, 0);
-        if (scoreboardConfig.intValue() != 1) {
-            return;  // 积分板未开启，直接返回
-        }
-
         // 获取dataType为1的在线玩家
         List<Player> dataTypeOnePlayers = Bukkit.getOnlinePlayers().stream()
                 .filter(p -> {
@@ -293,7 +285,7 @@ public class Ranking extends JavaPlugin implements Listener {
                 score.setScore((int) rankingdata);
             }
         }
-
+        
         // 设置指定玩家的 Scoreboard
         for (Player onlinePlayer : dataTypeOnePlayers) {
             onlinePlayer.setScoreboard(playerScoreboard);
