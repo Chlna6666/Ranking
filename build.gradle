@@ -18,10 +18,12 @@ repositories {
 }
 
 dependencies {
-    compileOnly "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
+    compileOnly "com.destroystokyo.paper:paper-api:1.13-R0.1-SNAPSHOT"
 }
 
-def targetJavaVersion = 17
+
+
+def targetJavaVersion = 8
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
