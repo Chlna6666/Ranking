@@ -219,6 +219,9 @@ public class Ranking extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
+        if (event.getPlayer() == null) {
+            return;
+        }
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         //Bukkit.getLogger().warning("当前 placeData 的值：" + placeData.toJSONString());
@@ -234,6 +237,9 @@ public class Ranking extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
+        if (event.getPlayer() == null) {
+            return;
+        }
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         //Bukkit.getLogger().warning("当前 destroysData 的值：" + destroysData.toJSONString());
