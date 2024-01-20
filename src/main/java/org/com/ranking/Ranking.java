@@ -218,16 +218,11 @@ public class Ranking extends JavaPlugin implements Listener {
 
 
     @EventHandler
-<<<<<<< HEAD
     public void onBlockPlace(BlockPlaceEvent event) {
         if (event.getPlayer() == null) {
             return;
         }
         Player player = event.getPlayer();
-=======
-    public void onBlockPlace(BlockPlaceEvent Player) {
-        Player player = Player.getPlayer();
->>>>>>> baf02333a3d0da3d5a3f7c0c5ad16d29f2c443d3
         UUID uuid = player.getUniqueId();
         //Bukkit.getLogger().warning("当前 placeData 的值：" + placeData.toJSONString());
         // 更新放置数量
@@ -241,16 +236,11 @@ public class Ranking extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-<<<<<<< HEAD
     public void onBreak(BlockBreakEvent event) {
         if (event.getPlayer() == null) {
             return;
         }
         Player player = event.getPlayer();
-=======
-    public void onBreak(BlockBreakEvent Player) {
-        Player player = Player.getPlayer();
->>>>>>> baf02333a3d0da3d5a3f7c0c5ad16d29f2c443d3
         UUID uuid = player.getUniqueId();
         //Bukkit.getLogger().warning("当前 destroysData 的值：" + destroysData.toJSONString());
         long destroysBlocks = (long) destroysData.getOrDefault(uuid.toString(), 0L);
