@@ -5,12 +5,12 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -23,7 +23,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -92,15 +95,6 @@ public class Ranking extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         Bukkit.getLogger().info("");
-        Bukkit.getLogger().info(GREEN+" ______   ______   __   __   __  __   __   __   __   ______    "+RESET);
-        Bukkit.getLogger().info(GREEN+"/\\  == \\ /\\  __ \\ /\\ \"-.\\ \\ /\\ \\/ /  /\\ \\ /\\ \"-.\\ \\ /\\  ___\\   "+RESET);
-        Bukkit.getLogger().info(GREEN+"\\ \\  __< \\ \\  __ \\\\ \\ \\-.  \\\\ \\  _\"-.\\ \\ \\\\ \\ \\-.  \\\\ \\ \\__ \\  "+RESET);
-        Bukkit.getLogger().info(GREEN+" \\ \\_\\ \\_\\\\ \\_\\ \\_\\\\ \\_\\\\\"\\_\\\\ \\_\\ \\_\\\\ \\_\\\\ \\_\\\\\"\\_\\\\ \\_____\\ "+RESET);
-        Bukkit.getLogger().info(GREEN+"  \\/_/ /_/ \\/_/\\/_/ \\/_/ \\/_/ \\/_/\\/_/ \\/_/ \\/_/ \\/_/ \\/_____/ "+RESET);
-        Bukkit.getLogger().info("");
-
-
-        Bukkit.getLogger().info("");
         Bukkit.getLogger().info(GREEN+"██████╗  █████╗ ███╗   ██╗██╗  ██╗██╗███╗   ██╗ ██████╗ "+RESET);
         Bukkit.getLogger().info(GREEN+"██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝██║████╗  ██║██╔════╝ "+RESET);
         Bukkit.getLogger().info(GREEN+"██████╔╝███████║██╔██╗ ██║█████╔╝ ██║██╔██╗ ██║██║  ███╗"+RESET);
@@ -109,13 +103,10 @@ public class Ranking extends JavaPlugin implements Listener {
         Bukkit.getLogger().info(GREEN+"╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝"+RESET);
         Bukkit.getLogger().info("");
 
-
-
         // 确保文件夹存在
         if (!getDataFolder().exists()) {
             getDataFolder().mkdir();
         }
-
 
         // 初始化数据文件
         dataFile = new File(getDataFolder(), "data.json");
@@ -279,60 +270,29 @@ public class Ranking extends JavaPlugin implements Listener {
         Objective objective = playerScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        for (Map.Entry<String, Long> entry : data.entrySet()) {
-            String uuidString = entry.getKey();
-            long rankingdata = entry.getValue();
+        CompletableFuture<Void> allTasks = CompletableFuture.allOf(
+                data.entrySet().stream()
+                        .map(entry -> CompletableFuture.runAsync(() -> {
+                            String uuidString = entry.getKey();
+                            long rankingdata = entry.getValue();
 
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
-            if (offlinePlayer != null) {
-                String playerName = offlinePlayer.getName();
+                            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
+                            if (offlinePlayer != null) {
+                                String playerName = offlinePlayer.getName();
+                                Score score = objective.getScore(playerName);
+                                score.setScore((int) rankingdata);
+                            }
+                        }))
+                        .toArray(CompletableFuture[]::new)
+        );
 
-                Score score = objective.getScore(playerName);
-                score.setScore((int) rankingdata);
+        allTasks.thenRun(() -> {
+            // 设置指定玩家的 Scoreboard
+            for (Player onlinePlayer : dataTypeOnePlayers) {
+                onlinePlayer.setScoreboard(playerScoreboard);
             }
-        }
-        
-        // 设置指定玩家的 Scoreboard
-        for (Player onlinePlayer : dataTypeOnePlayers) {
-            onlinePlayer.setScoreboard(playerScoreboard);
-        }
+        });
     }
-
-
-
-    /*public void updateScoreboards(Player player,String sidebarTitle, Map<String, Long> data) {
-        UUID uuid = player.getUniqueId();
-        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
-        Scoreboard globalScoreboard = scoreboardManager.getNewScoreboard();
-        Objective objective = globalScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-
-        for (Map.Entry<String, Long> entry : data.entrySet()) {
-            String uuidString = entry.getKey();
-            long placedBlocks = entry.getValue();
-
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
-            if (offlinePlayer != null) {
-                String playerName = offlinePlayer.getName();
-
-                Score score = objective.getScore(playerName);
-                score.setScore((int) placedBlocks);
-            }
-        }
-
-        JSONObject playerData = (JSONObject) playersData.getOrDefault(uuid.toString(), new JSONObject());
-        Number placeValue = (Number) playerData.getOrDefault("place", 0);
-
-
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            onlinePlayer.setScoreboard(globalScoreboard);
-        }
-
-
-    }
-
-     */
-
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -439,8 +399,6 @@ public class Ranking extends JavaPlugin implements Listener {
             return new JSONObject();
         }
     }
-
-
 
     public void saveJSONAsync(JSONObject json, File file) {
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {

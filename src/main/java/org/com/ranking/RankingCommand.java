@@ -171,7 +171,7 @@ public class RankingCommand implements CommandExecutor {
                 playerData.put(rankingValue, newStatus);
             }
 
-            Bukkit.getLogger().warning("加载了playerData  " + playerData.toJSONString());
+            //Bukkit.getLogger().warning("加载了playerData  " + playerData.toJSONString());
             // 保存玩家数据到文件
             pluginInstance.saveJSONAsync(playersData, pluginInstance.getDataFile());
         }
