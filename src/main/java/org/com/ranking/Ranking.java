@@ -31,28 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class Ranking extends JavaPlugin implements Listener {
-////////////////////////////////////////////////////////////////////
-//                          _ooOoo_                               //
-//                         o8888888o                              //
-//                         88" . "88                              //
-//                         (| ^_^ |)                              //
-//                         O\  =  /O                              //
-//                      ____/`---'\____                           //
-//                    .'  \\|     |//  `.                         //
-//                   /  \\|||  :  |||//  \                        //
-//                  /  _||||| -:- |||||-  \                       //
-//                  |   | \\\  -  /// |   |                       //
-//                  | \_|  ''\---/''  |   |                       //
-//                  \  .-\__  `-`  ___/-. /                       //
-//                ___`. .'  /--.--\  `. . ___                     //
-//              ."" '<  `.___\_<|>_/___.'  >'"".                  //
-//            | | :  `- \`.;`\ _ /`;.`/ - ` : | |                 //
-//            \  \ `-.   \_ __\ /__ _/   .-` /  /                 //
-//      ========`-.____`-.___\_____/___.-`____.-'========         //
-//                           `=---='                              //
-//      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        //
-//                  佛祖保佑   3+证书考试必过200分                    //
-////////////////////////////////////////////////////////////////////
+//寄130分考你🐎
 
     private JSONObject playersData;
     private JSONObject placeData;
@@ -270,28 +249,22 @@ public class Ranking extends JavaPlugin implements Listener {
         Objective objective = playerScoreboard.registerNewObjective("Ranking", "dummy", sidebarTitle);
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        CompletableFuture<Void> allTasks = CompletableFuture.allOf(
-                data.entrySet().stream()
-                        .map(entry -> CompletableFuture.runAsync(() -> {
-                            String uuidString = entry.getKey();
-                            long rankingdata = entry.getValue();
+        for (Map.Entry<String, Long> entry : data.entrySet()) {
+            String uuidString = entry.getKey();
+            long rankingdata = entry.getValue();
 
-                            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
-                            if (offlinePlayer != null) {
-                                String playerName = offlinePlayer.getName();
-                                Score score = objective.getScore(playerName);
-                                score.setScore((int) rankingdata);
-                            }
-                        }))
-                        .toArray(CompletableFuture[]::new)
-        );
-
-        allTasks.thenRun(() -> {
-            // 设置指定玩家的 Scoreboard
-            for (Player onlinePlayer : dataTypeOnePlayers) {
-                onlinePlayer.setScoreboard(playerScoreboard);
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
+            if (offlinePlayer != null) {
+                String playerName = offlinePlayer.getName();
+                Score score = objective.getScore(playerName);
+                score.setScore((int) rankingdata);
             }
-        });
+        }
+
+        // 设置指定玩家的 Scoreboard
+        for (Player onlinePlayer : dataTypeOnePlayers) {
+            onlinePlayer.setScoreboard(playerScoreboard);
+        }
     }
 
     @EventHandler
