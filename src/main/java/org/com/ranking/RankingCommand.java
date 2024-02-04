@@ -6,6 +6,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
@@ -97,6 +100,24 @@ public class RankingCommand implements CommandExecutor {
 
 
             return true;
+        }else if (args.length > 0 && args[0].equalsIgnoreCase("mobdie")) {
+            updateScoreboardStatus(player, pluginInstance, "mobdie");
+            int scoreboardStatus = getPlayerScoreboardStatus(player, "mobdie");
+
+
+            // 根据计分板状态发送消息给玩家
+            if (scoreboardStatus == 1) {
+                clearScoreboard(player);
+                player.sendMessage("计分板已开启！");
+                // 开启计分板的逻辑
+                pluginInstance.updateScoreboards(player,"击杀榜", pluginInstance.getmobdieData(),"mobdie");
+            } else {
+                player.sendMessage("计分板已关闭！");
+                clearScoreboard(player); // 清空计分板
+            }
+
+
+            return true;
         }else if (args.length > 0 && args[0].equalsIgnoreCase("onlinetime")) {
             updateScoreboardStatus(player, pluginInstance, "onlinetime");
             int scoreboardStatus = getPlayerScoreboardStatus(player, "onlinetime");
@@ -115,7 +136,30 @@ public class RankingCommand implements CommandExecutor {
 
 
             return true;
+        }else if (args.length > 0 && args[0].equalsIgnoreCase("help")) {
+            TextComponent message = new TextComponent("§9§l=== §b§l");
+            TextComponent rankingLink = new TextComponent("[ranking]");
+            rankingLink.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/Chlna6666/Ranking"));
+            TextComponent helpMessage = new TextComponent("§9§l帮助 §f§lby Chlna6666 §9§l===\n");
+
+            message.addExtra(rankingLink);
+            message.addExtra(helpMessage);
+
+            TextComponent place = new TextComponent("§b/ranking place §f- §7查看放置榜\n");
+            place.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking place"));
+            TextComponent destroys = new TextComponent("§b/ranking destroys §f- §7查看挖掘榜\n");
+            destroys.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking destroys"));
+            TextComponent deads = new TextComponent("§b/ranking deads §f- §7查看死亡榜\n");
+            deads.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking deads"));
+            TextComponent mobdie = new TextComponent("§b/ranking mobdie §f- §7查看击杀榜\n");
+            mobdie.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking mobdie"));
+            TextComponent onlinetime = new TextComponent("§b/ranking onlinetime §f- §7查看在线时长榜\n");
+            onlinetime.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking onlinetime"));
+
+            player.spigot().sendMessage(ChatMessageType.CHAT, message, place, destroys, deads, mobdie, onlinetime);
+
         }
+
 
         return true;
     }
@@ -150,7 +194,7 @@ public class RankingCommand implements CommandExecutor {
     }
 
     public void updateScoreboardStatus(Player player, Ranking pluginInstance, String rankingValue) {
-        List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "onlinetime");
+        List<String> specificKeys = Arrays.asList("place", "destroys", "deads","mobdie", "onlinetime");
 
         UUID uuid = player.getUniqueId();
         JSONObject playersData = pluginInstance.getPlayersData();

@@ -4,11 +4,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -37,11 +39,15 @@ public class Ranking extends JavaPlugin implements Listener {
     private JSONObject placeData;
     private JSONObject destroysData;   //你说的是但是我就是分开写
     private JSONObject deadsData;
+
+    private JSONObject  mobdieData;
     private JSONObject onlinetimeData;
     private File dataFile;
     private File placeFile;
     private File destroysFile;
     private File deadsFile;
+
+    private File  mobdieFile;
     private File onlinetimeFile;
 
     // 获取 playersData
@@ -58,8 +64,12 @@ public class Ranking extends JavaPlugin implements Listener {
     public JSONObject getdestroysData() {
         return destroysData;
     }
+
     public JSONObject getdeadsData() {
         return deadsData;
+    }
+    public JSONObject getmobdieData() {
+        return mobdieData;
     }
     public JSONObject getonlinetimeData() {
         return onlinetimeData;
@@ -92,6 +102,7 @@ public class Ranking extends JavaPlugin implements Listener {
         placeFile = new File(getDataFolder(), "place.json");
         destroysFile = new File(getDataFolder(), "destroys.json");
         deadsFile = new File(getDataFolder(), "deads.json");
+        mobdieFile = new File(getDataFolder(),"mobdie.json");
         onlinetimeFile = new File(getDataFolder(), "onlinetime.json");
 
         if (!dataFile.exists() || dataFile.length() == 0) {
@@ -118,6 +129,13 @@ public class Ranking extends JavaPlugin implements Listener {
         }
         if (!deadsFile.exists() || deadsFile.length() == 0) {
             try (FileWriter writer = new FileWriter(deadsFile)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (!mobdieFile.exists() || mobdieFile.length() == 0) {
+            try (FileWriter writer = new FileWriter(mobdieFile)) {
                 writer.write("{}");
             } catch (IOException e) {
                 e.printStackTrace();
@@ -155,6 +173,12 @@ public class Ranking extends JavaPlugin implements Listener {
             saveJSONAsync(deadsData, deadsFile);
         } else {
             deadsData = loadJSON(deadsFile);
+        }
+        if (!mobdieFile.exists()) {
+            mobdieData = new JSONObject();
+            saveJSONAsync(mobdieData, mobdieFile);
+        } else {
+            mobdieData = loadJSON(mobdieFile);
         }
         if (!onlinetimeFile.exists()) {
             onlinetimeData = new JSONObject();
@@ -229,6 +253,19 @@ public class Ranking extends JavaPlugin implements Listener {
         updateScoreboards(player, "死亡榜", deadsData,"deads");
     }
 
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        if (event.getEntity().getKiller() == null || event.getEntity().getKiller().getPlayer() == null) {
+            return;
+        }
+        Player player = event.getEntity().getKiller().getPlayer();
+        UUID uuid = player.getUniqueId();
+        long deathCount = (long) mobdieData.getOrDefault(uuid.toString(), 0L);
+        mobdieData.put(uuid.toString(), deathCount + 1);
+        saveJSONAsync(mobdieData, mobdieFile);
+        updateScoreboards(player, "击杀榜", mobdieData,"mobdie");
+    }
+
 
 
 
@@ -299,6 +336,7 @@ public class Ranking extends JavaPlugin implements Listener {
         Number placeValue = (Number) playerData.getOrDefault("place", 0);
         Number destroysValue = (Number) playerData.getOrDefault("destroys", 0);
         Number deadsValue = (Number) playerData.getOrDefault("deads", 0);
+        Number mobdieValue = (Number) playerData.getOrDefault("mobdie", 0);
         Number onlinetimeValue = (Number) playerData.getOrDefault("onlinetime", 0);
 
         if (placeValue.intValue() == 1) {
@@ -309,6 +347,9 @@ public class Ranking extends JavaPlugin implements Listener {
         }
         if (deadsValue.intValue() == 1) {
             updateScoreboards(player, "死亡榜", deadsData,"deads");
+        }
+        if (mobdieValue.intValue() == 1) {
+            updateScoreboards(player, "击杀榜", deadsData,"mobdie");
         }
         if (onlinetimeValue.intValue() == 1) {
             updateScoreboards(player, "时长榜", onlinetimeData,"onlinetime");
