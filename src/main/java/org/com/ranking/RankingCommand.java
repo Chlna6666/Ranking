@@ -138,9 +138,9 @@ public class RankingCommand implements CommandExecutor {
             return true;
         }else if (args.length > 0 && args[0].equalsIgnoreCase("help")) {
             TextComponent message = new TextComponent("§9§l=== §b§l");
-            TextComponent rankingLink = new TextComponent("[ranking]");
+            TextComponent rankingLink = new TextComponent("[Ranking]");
             rankingLink.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/Chlna6666/Ranking"));
-            TextComponent helpMessage = new TextComponent("§9§l帮助 §f§lby Chlna6666 §9§l===\n");
+            TextComponent helpMessage = new TextComponent(" §9§l帮助 §f§lby Chlna6666 §9§l===\n");
 
             message.addExtra(rankingLink);
             message.addExtra(helpMessage);
