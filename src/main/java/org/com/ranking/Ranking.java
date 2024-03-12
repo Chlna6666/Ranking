@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.entity.EntityType;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,20 +17,19 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
+import org.com.ranking.metrics.Metrics;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static jdk.jfr.internal.SecuritySupport.getResourceAsStream;
 
 public class Ranking extends JavaPlugin implements Listener {
 //寄130分考你🐎
@@ -83,6 +82,26 @@ public class Ranking extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+
+        // 确保文件夹存在
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdir();
+        }
+
+        saveDefaultConfig();
+        //this.saveResource("config.yml",false);
+
+        copyLangFiles();
+
+        // 获取配置文件中的语言选项
+        String languageOption = getConfig().getString("language");
+
+       // 根据语言选项加载相应的语言文件
+        File langFile = new File(getDataFolder(), "lang/" + languageOption + ".yml");
+        YamlConfiguration langConfig = YamlConfiguration.loadConfiguration(langFile);
+
+
+
         Bukkit.getLogger().info("");
         Bukkit.getLogger().info(GREEN+"██████╗  █████╗ ███╗   ██╗██╗  ██╗██╗███╗   ██╗ ██████╗ "+RESET);
         Bukkit.getLogger().info(GREEN+"██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝██║████╗  ██║██╔════╝ "+RESET);
@@ -92,100 +111,47 @@ public class Ranking extends JavaPlugin implements Listener {
         Bukkit.getLogger().info(GREEN+"╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝"+RESET);
         Bukkit.getLogger().info("");
 
-        // 确保文件夹存在
-        if (!getDataFolder().exists()) {
-            getDataFolder().mkdir();
+
+
+
+        String storageLocation = getConfig().getString("data_storage.location");
+        String serverDirectory = System.getProperty("user.dir");
+        File dataFolder = new File(serverDirectory, storageLocation);
+
+        if (!dataFolder.exists()) {
+            dataFolder.mkdirs(); // 创建文件夹及其父文件夹
         }
 
-        // 初始化数据文件
-        dataFile = new File(getDataFolder(), "data.json");
-        placeFile = new File(getDataFolder(), "place.json");
-        destroysFile = new File(getDataFolder(), "destroys.json");
-        deadsFile = new File(getDataFolder(), "deads.json");
-        mobdieFile = new File(getDataFolder(),"mobdie.json");
-        onlinetimeFile = new File(getDataFolder(), "onlinetime.json");
 
-        if (!dataFile.exists() || dataFile.length() == 0) {
-            try (FileWriter writer = new FileWriter(dataFile)) {
-                writer.write("{}");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+// 初始化数据文件
+        if (getConfig().getString("data_storage.method").equalsIgnoreCase("json")) {
+            dataFile = new File(dataFolder, "data.json");
+            placeFile = new File(dataFolder, "place.json");
+            destroysFile = new File(dataFolder, "destroys.json");
+            deadsFile = new File(dataFolder, "deads.json");
+            mobdieFile = new File(dataFolder,"mobdie.json");
+            onlinetimeFile = new File(dataFolder, "onlinetime.json");
 
-        if (!placeFile.exists() || placeFile.length() == 0) {
-            try (FileWriter writer = new FileWriter(placeFile)) {
-                writer.write("{}");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (!destroysFile.exists() || destroysFile.length() == 0) {
-            try (FileWriter writer = new FileWriter(destroysFile)) {
-                writer.write("{}");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (!deadsFile.exists() || deadsFile.length() == 0) {
-            try (FileWriter writer = new FileWriter(deadsFile)) {
-                writer.write("{}");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (!mobdieFile.exists() || mobdieFile.length() == 0) {
-            try (FileWriter writer = new FileWriter(mobdieFile)) {
-                writer.write("{}");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (!onlinetimeFile.exists() || onlinetimeFile.length() == 0) {
-            try (FileWriter writer = new FileWriter(onlinetimeFile)) {
-                writer.write("{}");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // 检查并初始化 JSON 文件
+            initializeAndSaveJSON(dataFile, playersData);
+            initializeAndSaveJSON(placeFile, placeData);
+            initializeAndSaveJSON(destroysFile, destroysData);
+            initializeAndSaveJSON(deadsFile, deadsData);
+            initializeAndSaveJSON(mobdieFile, mobdieData);
+            initializeAndSaveJSON(onlinetimeFile, onlinetimeData);
+        } else if (getConfig().getString("data_storage.method").equalsIgnoreCase("db")) {
+            // 初始化数据库连接，加载数据
+            initializeAndLoadDB();
+        } else if (getConfig().getString("data_storage.method").equalsIgnoreCase("mysql")) {
+            // 初始化 MySQL 连接，加载数据
+            initializeAndLoadMySQL();
         }
 
-            // 保存数据
-        if (!dataFile.exists()) {
-             playersData = new JSONObject();
-             saveJSONAsync(playersData, dataFile);
-        } else {
-             playersData = loadJSON(dataFile);
-        }
-        if (!placeFile.exists()) {
-            placeData = new JSONObject();
-            saveJSONAsync(placeData, placeFile);
-        } else {
-            placeData = loadJSON(placeFile);
-        }
-        if (!destroysFile.exists()) {
-            destroysData = new JSONObject();
-            saveJSONAsync(destroysData, destroysFile);
-        } else {
-            destroysData = loadJSON(destroysFile);
-        }
-        if (!deadsFile.exists()) {
-            deadsData = new JSONObject();
-            saveJSONAsync(deadsData, deadsFile);
-        } else {
-            deadsData = loadJSON(deadsFile);
-        }
-        if (!mobdieFile.exists()) {
-            mobdieData = new JSONObject();
-            saveJSONAsync(mobdieData, mobdieFile);
-        } else {
-            mobdieData = loadJSON(mobdieFile);
-        }
-        if (!onlinetimeFile.exists()) {
-            onlinetimeData = new JSONObject();
-            saveJSONAsync(onlinetimeData, onlinetimeFile);
-        } else {
-            onlinetimeData = loadJSON(onlinetimeFile);
-        }
+
+
+        int pluginId = 21233;
+        Metrics metrics = new Metrics(this, pluginId);
+
 
 
         // 注册事件监听器
@@ -205,6 +171,78 @@ public class Ranking extends JavaPlugin implements Listener {
 
     }
 
+
+    private void copyLangFiles() {
+        File langFolder = new File(getDataFolder(), "lang");
+        if (!langFolder.exists()) {
+            langFolder.mkdirs();
+        }
+
+        // 从资源中复制语言文件到插件数据文件夹
+        File[] langFiles = new File(String.valueOf(getResource("lang"))).listFiles();
+        if (langFiles != null) {
+            for (File langFile : langFiles) {
+                if (langFile.isFile()) {
+                    try (InputStream inputStream = getResourceAsStream("lang/" + langFile.getName());
+                         OutputStream outputStream = new FileOutputStream(new File(langFolder, langFile.getName()))) {
+                        byte[] buffer = new byte[1024];
+                        int length;
+                        while ((length = inputStream.read(buffer)) > 0) {
+                            outputStream.write(buffer, 0, length);
+                        }
+                    } catch (IOException e) {
+                        getLogger().warning("无法复制语言文件：" + langFile.getName());
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+    // 函数：初始化和保存 JSON 数据
+// 函数：初始化和保存 JSON 数据
+    private void initializeAndSaveJSON(File file, JSONObject data) {
+        try {
+            if (!file.exists() || file.length() == 0) {
+                try (FileWriter writer = new FileWriter(file)) {
+                    writer.write("{}");
+                }
+                data = new JSONObject(); // 初始化数据对象
+            } else {
+                data = loadJSON(file); // 加载数据文件中的内容到数据对象
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // 更新实例变量的值
+        if (file.getName().equalsIgnoreCase("data.json")) {
+            playersData = data;
+        } else if (file.getName().equalsIgnoreCase("place.json")) {
+            placeData = data;
+        } else if (file.getName().equalsIgnoreCase("destroys.json")) {
+            destroysData = data;
+        } else if (file.getName().equalsIgnoreCase("deads.json")) {
+            deadsData = data;
+        } else if (file.getName().equalsIgnoreCase("mobdie.json")) {
+            mobdieData = data;
+        } else if (file.getName().equalsIgnoreCase("onlinetime.json")) {
+            onlinetimeData = data;
+        }
+    }
+
+
+    // 函数：初始化和加载数据库
+    private void initializeAndLoadDB() {
+        // 实现数据库连接初始化和加载数据的逻辑
+    }
+
+    // 函数：初始化和加载 MySQL 连接
+    private void initializeAndLoadMySQL() {
+        // 实现 MySQL 连接初始化和加载数据的逻辑
+    }
 
 
 

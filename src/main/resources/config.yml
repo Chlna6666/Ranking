@@ -1,0 +1,27 @@
+# 排行榜插件配置文件
+
+# 选择语言
+language: en_US  # 可选值: en_US (English), zh_CN (简体中文)
+
+# 排行榜开关设置
+leaderboards:
+  place: true   # 是否启用放置榜
+  destroys: true   # 是否启用挖掘榜
+  deads: true   # 是否启用死亡榜
+  mobdie: true   # 是否启用击杀榜
+  onlinetime: true   # 是否启用在线时长榜
+
+# 数据存储方式设置
+data_storage:
+  method: json   # 数据存储方式，可选值: json (JSON 文件), db (数据库), mysql (MySQL 数据库)
+  location: /plugins/Ranking/data   # 数据存储位置，仅在选择 json 存储方式时有效
+
+# 数据库连接设置
+database:
+  method: db   # 数据库存储方式，可选值: db (内置数据库), mysql (MySQL 数据库)
+  location: /plugins/Ranking/database.db   # 数据库存储位置，仅在选择 db 存储方式时有效
+  host: localhost   # MySQL 数据库主机地址，仅在选择 mysql 存储方式时有效
+  port: 3306   # MySQL 数据库端口，仅在选择 mysql 存储方式时有效
+  username: root   # MySQL 数据库用户名，仅在选择 mysql 存储方式时有效
+  password: password   # MySQL 数据库密码，仅在选择 mysql 存储方式时有效
+  database_name: ranking_data   # MySQL 数据库名称，仅在选择 mysql 存储方式时有效
