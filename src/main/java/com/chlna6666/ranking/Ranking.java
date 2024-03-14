@@ -1,4 +1,4 @@
-package org.com.ranking;
+package com.chlna6666.ranking;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -17,7 +17,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
-import org.com.ranking.metrics.Metrics;
+import com.chlna6666.ranking.metrics.Metrics;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static jdk.jfr.internal.SecuritySupport.getResourceAsStream;
 
 public class Ranking extends JavaPlugin implements Listener {
 //寄130分考你🐎
@@ -178,24 +177,7 @@ public class Ranking extends JavaPlugin implements Listener {
             langFolder.mkdirs();
         }
 
-        // 从资源中复制语言文件到插件数据文件夹
-        File[] langFiles = new File(String.valueOf(getResource("lang"))).listFiles();
-        if (langFiles != null) {
-            for (File langFile : langFiles) {
-                if (langFile.isFile()) {
-                    try (InputStream inputStream = getResourceAsStream("lang/" + langFile.getName());
-                         OutputStream outputStream = new FileOutputStream(new File(langFolder, langFile.getName()))) {
-                        byte[] buffer = new byte[1024];
-                        int length;
-                        while ((length = inputStream.read(buffer)) > 0) {
-                            outputStream.write(buffer, 0, length);
-                        }
-                    } catch (IOException e) {
-                        getLogger().warning("无法复制语言文件：" + langFile.getName());
-                    }
-                }
-            }
-        }
+
     }
 
 

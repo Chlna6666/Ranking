@@ -1,4 +1,4 @@
-package org.com.ranking.metrics;
+package com.chlna6666.ranking.metrics;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;

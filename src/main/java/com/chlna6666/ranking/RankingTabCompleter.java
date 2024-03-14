@@ -1,4 +1,4 @@
-package org.com.ranking;
+package com.chlna6666.ranking;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
