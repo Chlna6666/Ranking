@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'org.com'
-version = '1.1.1-SNAPSHOT'
+version = '1.1.2-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -15,10 +15,18 @@ repositories {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
     }
+    maven {
+        name = "PlaceholderAPI"
+        url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
+    }
 }
+
+
+
 
 dependencies {
     compileOnly "com.destroystokyo.paper:paper-api:1.13-R0.1-SNAPSHOT"
+    compileOnly "me.clip:placeholderapi:2.11.5"
 }
 
 

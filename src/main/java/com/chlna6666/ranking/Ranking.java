@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 
 public class Ranking extends JavaPlugin implements Listener {
-//寄130分考你🐎
+//寄 130分考你🐎
 
     private JSONObject playersData;
     private JSONObject placeData;
@@ -167,6 +167,13 @@ public class Ranking extends JavaPlugin implements Listener {
         } else {
             getLogger().warning("无法获取 /ranking 主命令！");
         }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) { //
+            new Papi(this).register();
+
+        }
+
+
 
     }
 
