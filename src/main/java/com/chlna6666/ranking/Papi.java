@@ -58,7 +58,7 @@ public class Papi extends PlaceholderExpansion {
                 }
             }
         }
-     /* 1
+     /*
      if (params.equalsIgnoreCase("allplace") && pluginInstance != null) {
             JSONObject jsonData = pluginInstance.getplaceData();
             if (jsonData != null) {
