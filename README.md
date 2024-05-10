@@ -2,7 +2,7 @@
 
 这是一个 Minecraft 服务器排行榜插件，根据玩家的统计数据（如放置方块数量、破坏方块数量、死亡次数、击杀数量和在线时长等）生成排行榜，并在游戏中显示。
 
-![图片](docs\img\scoreboards.png)
+![图片](docs/img/scoreboards.png)
 
 ## 功能特点
 - **多种排行榜类型**: 插件支持放置、破坏、死亡、击杀和在线时长等多种排行榜类型。
@@ -38,7 +38,7 @@ data_storage:
 3. 在游戏中使用相应的命令查看排行榜。
 
 ## 插件命令
-![图片](docs\img\help.png)
+![图片](docs/img/help.png)
 - `/ranking <子命令>`: 主命令，用于查看排行榜和其他功能。
   - 别名: `/rk`
   - 用法: `/ranking <子命令>`
@@ -50,7 +50,7 @@ data_storage:
     - `onlinetime`: 查看在线时长榜排行榜。
     - `help`: 查看帮助信息。
 # PAPI
-![图片](docs\img\papi.png)
+![图片](docs/img/papi.png)
 
 
 
