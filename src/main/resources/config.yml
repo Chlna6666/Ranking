@@ -15,6 +15,8 @@ leaderboards:
 data_storage:
   method: json   # 数据存储方式，可选值: json (JSON 文件), db (数据库), mysql (MySQL 数据库)
   location: /plugins/Ranking/data   # 数据存储位置，仅在选择 json 存储方式时有效
+  save_delay: 100  # 保存延迟，单位为ticks (1 tick = 50 ms)
+  regular_save_interval: 1200  # 定期保存间隔，单位为ticks (1 tick = 50 ms)v
 
 # 数据库连接设置
 database:

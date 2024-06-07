@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 
@@ -75,6 +77,25 @@ public class Ranking extends JavaPlugin implements Listener {
 
     private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<UUID, BukkitRunnable>();
 
+    private final AtomicBoolean placeSaveTaskRunning = new AtomicBoolean(false);
+    private final AtomicBoolean breakSaveTaskRunning = new AtomicBoolean(false);
+    private final AtomicBoolean deathSaveTaskRunning = new AtomicBoolean(false);
+    private final AtomicBoolean mobDeathSaveTaskRunning = new AtomicBoolean(false);
+    private final AtomicBoolean onlineTimeSaveTaskRunning = new AtomicBoolean(false);
+
+    private BukkitRunnable placeSaveTask;
+    private BukkitRunnable breakSaveTask;
+    private BukkitRunnable deathSaveTask;
+    private BukkitRunnable mobDeathSaveTask;
+    private BukkitRunnable onlineTimeSaveTask;
+
+    private BukkitRunnable saveTask;
+    private BukkitRunnable regularSaveTask;
+
+    private long SAVE_DELAY_TICKS;
+    private long REGULAR_SAVE_INTERVAL_TICKS;
+
+
     public static final String GREEN = "\u001B[0;33m";
     public static final String RESET = "\u001B[0m";
 
@@ -89,6 +110,8 @@ public class Ranking extends JavaPlugin implements Listener {
 
         saveDefaultConfig();
         //this.saveResource("config.yml",false);
+
+        loadConfigValues();
 
         copyLangFiles();
 
@@ -177,20 +200,36 @@ public class Ranking extends JavaPlugin implements Listener {
 
     }
 
+    @Override
+    public void onDisable() {
+        saveAllData();
+    }
+
+        private void saveAllData() {
+        saveJSON(playersData, dataFile);
+        saveJSON(placeData, placeFile);
+        saveJSON(destroysData, destroysFile);
+        saveJSON(deadsData, deadsFile);
+        saveJSON(mobdieData, mobdieFile);
+        saveJSON(onlinetimeData, onlinetimeFile);
+    }
+
 
     private void copyLangFiles() {
         File langFolder = new File(getDataFolder(), "lang");
         if (!langFolder.exists()) {
             langFolder.mkdirs();
         }
+    }
 
-
+    private void loadConfigValues() {
+        FileConfiguration config = getConfig();
+        SAVE_DELAY_TICKS = config.getLong("data_storage.save_delay");
+        REGULAR_SAVE_INTERVAL_TICKS = config.getLong("data_storage.regular_save_interval");
     }
 
 
 
-
-    // 函数：初始化和保存 JSON 数据
 // 函数：初始化和保存 JSON 数据
     private void initializeAndSaveJSON(File file, JSONObject data) {
         try {
@@ -250,8 +289,9 @@ public class Ranking extends JavaPlugin implements Listener {
         long placedBlocks = (long) placeData.getOrDefault(uuid.toString(), 0L);
         placeData.put(uuid.toString(), placedBlocks + 1);
         //Bukkit.getLogger().warning("修改后的 placeData 的值：" + placeData.toJSONString());
+        startSaveTask(placeSaveTaskRunning, placeSaveTask, placeData, placeFile);
         // 异步保存 placeData
-        saveJSONAsync(placeData, placeFile);
+        //saveJSONAsync(placeData, placeFile);
         // 刷新计分板
         updateScoreboards( player,"放置榜", placeData,"place");
     }
@@ -266,7 +306,8 @@ public class Ranking extends JavaPlugin implements Listener {
         //Bukkit.getLogger().warning("当前 destroysData 的值：" + destroysData.toJSONString());
         long destroysBlocks = (long) destroysData.getOrDefault(uuid.toString(), 0L);
         destroysData.put(uuid.toString(), destroysBlocks + 1);
-        saveJSONAsync(destroysData, destroysFile);
+        //saveJSONAsync(destroysData, destroysFile);
+        startSaveTask(breakSaveTaskRunning, breakSaveTask, destroysData, destroysFile);
         updateScoreboards( player,"挖掘榜", destroysData,"destroys");
     }
 
@@ -421,6 +462,32 @@ public class Ranking extends JavaPlugin implements Listener {
             timer.cancel();
             onlineTimers.remove(uuid);  // 在玩家退出时从Map中移除计时器
         }
+    }
+
+    private void startSaveTask(AtomicBoolean taskRunning, BukkitRunnable task, JSONObject data, File file) {
+        if (taskRunning.compareAndSet(false, true)) {
+            if (task != null && !task.isCancelled()) {
+                task.cancel();
+            }
+            task = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    saveJSON(data, file);
+                    taskRunning.set(false);
+                }
+            };
+            task.runTaskLater(this, SAVE_DELAY_TICKS);
+        }
+    }
+
+    private void startRegularSaveTask() {
+        regularSaveTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                saveAllData();
+            }
+        };
+        regularSaveTask.runTaskTimer(this, 1200, 1200);
     }
 
 

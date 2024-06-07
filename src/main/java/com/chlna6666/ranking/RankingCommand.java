@@ -1,12 +1,12 @@
 package com.chlna6666.ranking;
 
-
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -15,12 +15,11 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.json.simple.JSONObject;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class RankingCommand implements CommandExecutor {
-    private Ranking pluginInstance;
+    private final Ranking pluginInstance;
 
     public RankingCommand(Ranking pluginInstance) {
         this.pluginInstance = pluginInstance;
@@ -28,140 +27,159 @@ public class RankingCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        Player player = (Player) sender;
-
         if (!(sender instanceof Player)) {
             sender.sendMessage("只有玩家可以执行此命令！");
             return true;
         }
+
+        Player player = (Player) sender;
+
         if (args.length == 0) {
             sender.sendMessage("使用方法: /ranking <子命令>");
             return true;
         }
 
-
-        if (args.length > 0 && args[0].equalsIgnoreCase("place")) {
-            // 获取玩家的计分板状态
-
-            updateScoreboardStatus(player, pluginInstance, "place");
-
-            int scoreboardStatus = getPlayerScoreboardStatus(player, "place");
-
-            Bukkit.getLogger().info("scoreboardStatus : " + scoreboardStatus);
-
-            // 根据计分板状态发送消息给玩家
-            if (scoreboardStatus == 1) {
-                clearScoreboard(player);
-                player.sendMessage("计分板已开启！");
-
-                // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"放置榜", pluginInstance.getplaceData(),"place");
-                Bukkit.getLogger().info("pluginInstance.getplaceData(): " + pluginInstance.getplaceData());
-            } else {
-                player.sendMessage("计分板已关闭！");
-                clearScoreboard(player); // 清空计分板
-            }
-
-            return true;
+        switch (args[0].toLowerCase()) {
+            case "place":
+                handleScoreboardToggle(player, "place", "放置榜", pluginInstance.getplaceData());
+                break;
+            case "destroys":
+                handleScoreboardToggle(player, "destroys", "挖掘榜", pluginInstance.getdestroysData());
+                break;
+            case "deads":
+                handleScoreboardToggle(player, "deads", "死亡榜", pluginInstance.getdeadsData());
+                break;
+            case "mobdie":
+                handleScoreboardToggle(player, "mobdie", "击杀榜", pluginInstance.getmobdieData());
+                break;
+            case "onlinetime":
+                handleScoreboardToggle(player, "onlinetime", "时长榜", pluginInstance.getonlinetimeData());
+                break;
+            case "all":
+                displayAllRankings(player);
+                break;
+            case "my":
+                displayPlayerRankings(player);
+                break;
+            case "list":
+                if (args.length > 1) {
+                    handleSingleRanking(player, args[1]);
+                } else {
+                    player.sendMessage("使用方法: /ranking list <ranking_name>");
+                }
+                break;
+            case "help":
+                displayHelpMessage(player);
+                break;
+            default:
+                player.sendMessage("未知的子命令，请使用 /ranking help 查看帮助信息。");
+                break;
         }
-        else if (args.length > 0 && args[0].equalsIgnoreCase("destroys")) {
-            updateScoreboardStatus(player, pluginInstance, "destroys");
-            int scoreboardStatus = getPlayerScoreboardStatus(player, "destroys");
-
-
-            // 根据计分板状态发送消息给玩家
-            if (scoreboardStatus == 1) {
-                clearScoreboard(player);
-                player.sendMessage("计分板已开启！");
-                // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"挖掘榜", pluginInstance.getdestroysData(),"destroys");
-            } else {
-                player.sendMessage("计分板已关闭！");
-                clearScoreboard(player); // 清空计分板
-            }
-
-
-            return true;
-        }else if (args.length > 0 && args[0].equalsIgnoreCase("deads")) {
-            updateScoreboardStatus(player, pluginInstance, "deads");
-            int scoreboardStatus = getPlayerScoreboardStatus(player, "deads");
-
-
-            // 根据计分板状态发送消息给玩家
-            if (scoreboardStatus == 1) {
-                clearScoreboard(player);
-                player.sendMessage("计分板已开启！");
-                // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"死亡榜", pluginInstance.getdeadsData(),"deads");
-            } else {
-                player.sendMessage("计分板已关闭！");
-                clearScoreboard(player); // 清空计分板
-            }
-
-
-            return true;
-        }else if (args.length > 0 && args[0].equalsIgnoreCase("mobdie")) {
-            updateScoreboardStatus(player, pluginInstance, "mobdie");
-            int scoreboardStatus = getPlayerScoreboardStatus(player, "mobdie");
-
-
-            // 根据计分板状态发送消息给玩家
-            if (scoreboardStatus == 1) {
-                clearScoreboard(player);
-                player.sendMessage("计分板已开启！");
-                // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"击杀榜", pluginInstance.getmobdieData(),"mobdie");
-            } else {
-                player.sendMessage("计分板已关闭！");
-                clearScoreboard(player); // 清空计分板
-            }
-
-
-            return true;
-        }else if (args.length > 0 && args[0].equalsIgnoreCase("onlinetime")) {
-            updateScoreboardStatus(player, pluginInstance, "onlinetime");
-            int scoreboardStatus = getPlayerScoreboardStatus(player, "onlinetime");
-
-
-            // 根据计分板状态发送消息给玩家
-            if (scoreboardStatus == 1) {
-                clearScoreboard(player);
-                player.sendMessage("计分板已开启！");
-                // 开启计分板的逻辑
-                pluginInstance.updateScoreboards(player,"时长榜", pluginInstance.getonlinetimeData(),"onlinetime");
-            } else {
-                player.sendMessage("计分板已关闭！");
-                clearScoreboard(player); // 清空计分板
-            }
-
-
-            return true;
-        }else if (args.length > 0 && args[0].equalsIgnoreCase("help")) {
-            TextComponent message = new TextComponent("§9§l=== §b§l");
-            TextComponent rankingLink = new TextComponent("[Ranking]");
-            rankingLink.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/Chlna6666/Ranking"));
-            TextComponent helpMessage = new TextComponent(" §9§l帮助 §f§lby Chlna6666 §9§l===\n");
-
-            message.addExtra(rankingLink);
-            message.addExtra(helpMessage);
-
-            TextComponent place = new TextComponent("§b/ranking place §f- §7查看放置榜\n");
-            place.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking place"));
-            TextComponent destroys = new TextComponent("§b/ranking destroys §f- §7查看挖掘榜\n");
-            destroys.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking destroys"));
-            TextComponent deads = new TextComponent("§b/ranking deads §f- §7查看死亡榜\n");
-            deads.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking deads"));
-            TextComponent mobdie = new TextComponent("§b/ranking mobdie §f- §7查看击杀榜\n");
-            mobdie.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking mobdie"));
-            TextComponent onlinetime = new TextComponent("§b/ranking onlinetime §f- §7查看在线时长榜\n");
-            onlinetime.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking onlinetime"));
-
-            player.spigot().sendMessage(ChatMessageType.CHAT, message, place, destroys, deads, mobdie, onlinetime);
-
-        }
-
 
         return true;
+    }
+
+    private void handleScoreboardToggle(Player player, String rankingName, String displayName, Map<String, Long> rankingData) {
+        updateScoreboardStatus(player, pluginInstance, rankingName);
+        int scoreboardStatus = getPlayerScoreboardStatus(player, rankingName);
+
+        if (scoreboardStatus == 1) {
+            clearScoreboard(player);
+            player.sendMessage(displayName + "已开启！");
+            pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
+        } else {
+            player.sendMessage(displayName + "已关闭！");
+            clearScoreboard(player);
+        }
+    }
+
+    private void displayAllRankings(Player player) {
+        player.sendMessage(ChatColor.GOLD + "所有排行榜数据：");
+        displayRankingData(player, "放置榜", pluginInstance.getplaceData());
+        displayRankingData(player, "挖掘榜", pluginInstance.getdestroysData());
+        displayRankingData(player, "死亡榜", pluginInstance.getdeadsData());
+        displayRankingData(player, "击杀榜", pluginInstance.getmobdieData());
+        displayRankingData(player, "时长榜", pluginInstance.getonlinetimeData());
+    }
+
+    private void displayPlayerRankings(Player player) {
+        UUID uuid = player.getUniqueId();
+        player.sendMessage(ChatColor.GOLD + "你的所有排行榜数据：");
+        displayPlayerData(player, "放置榜", pluginInstance.getplaceData(), uuid);
+        displayPlayerData(player, "挖掘榜", pluginInstance.getdestroysData(), uuid);
+        displayPlayerData(player, "死亡榜", pluginInstance.getdeadsData(), uuid);
+        displayPlayerData(player, "击杀榜", pluginInstance.getmobdieData(), uuid);
+        displayPlayerData(player, "时长榜", pluginInstance.getonlinetimeData(), uuid);
+    }
+
+    private void handleSingleRanking(Player player, String rankingName) {
+        switch (rankingName.toLowerCase()) {
+            case "place":
+                displayRankingData(player, "放置榜", pluginInstance.getplaceData());
+                break;
+            case "destroys":
+                displayRankingData(player, "挖掘榜", pluginInstance.getdestroysData());
+                break;
+            case "deads":
+                displayRankingData(player, "死亡榜", pluginInstance.getdeadsData());
+                break;
+            case "mobdie":
+                displayRankingData(player, "击杀榜", pluginInstance.getmobdieData());
+                break;
+            case "onlinetime":
+                displayRankingData(player, "时长榜", pluginInstance.getonlinetimeData());
+                break;
+            default:
+                player.sendMessage("未知的排行榜名称，请使用 /ranking help 查看帮助信息。");
+                break;
+        }
+    }
+
+    private void displayRankingData(Player player, String title, Map<String, Long> data) {
+        player.sendMessage(ChatColor.GOLD + title + "：");
+        data.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .forEach(entry -> {
+                    UUID uuid = UUID.fromString(entry.getKey());
+                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+                    String playerName = offlinePlayer.getName();
+                    String message = (uuid.equals(player.getUniqueId()) ? ChatColor.GREEN : ChatColor.WHITE) +
+                            playerName + ": " + entry.getValue();
+                    player.sendMessage(message);
+                });
+    }
+
+    private void displayPlayerData(Player player, String title, Map<String, Long> data, UUID uuid) {
+        Long value = data.get(uuid.toString());
+        if (value != null) {
+            player.sendMessage(ChatColor.GOLD + title + "：" + ChatColor.GREEN + value);
+        } else {
+            player.sendMessage(ChatColor.GOLD + title + "：无数据");
+        }
+    }
+
+    private void updateScoreboardStatus(Player player, Ranking pluginInstance, String rankingValue) {
+        List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime");
+
+        UUID uuid = player.getUniqueId();
+        JSONObject playersData = pluginInstance.getPlayersData();
+        JSONObject playerData = (JSONObject) playersData.get(uuid.toString());
+
+        if (playerData != null) {
+            for (String key : specificKeys) {
+                if (!key.equals(rankingValue)) {
+                    playerData.put(key, 0L);
+                }
+            }
+
+            if (specificKeys.contains(rankingValue)) {
+                long currentValue = playerData.containsKey(rankingValue) ? (long) playerData.get(rankingValue) : 0;
+                long newStatus = (currentValue == 0) ? 1 : 0;
+                playerData.put(rankingValue, newStatus);
+            }
+
+            pluginInstance.saveJSONAsync(playersData, pluginInstance.getDataFile());
+        }
     }
 
     private int getPlayerScoreboardStatus(Player player, String rankingValue) {
@@ -169,9 +187,7 @@ public class RankingCommand implements CommandExecutor {
         if (playerData != null && playerData.containsKey(rankingValue)) {
             Object value = playerData.get(rankingValue);
             if (value instanceof Long) {
-                long longValue = (Long) value;
-                int intValue = (int) longValue;
-                return intValue;
+                return ((Long) value).intValue();
             } else if (value instanceof Integer) {
                 return (int) value;
             } else {
@@ -183,49 +199,11 @@ public class RankingCommand implements CommandExecutor {
         return 0;
     }
 
-
-
-
-
     private JSONObject getPlayerData(Player player, Ranking pluginInstance) {
         UUID uuid = player.getUniqueId();
         JSONObject playersData = pluginInstance.getPlayersData();
         return (JSONObject) playersData.get(uuid.toString());
     }
-
-    public void updateScoreboardStatus(Player player, Ranking pluginInstance, String rankingValue) {
-        List<String> specificKeys = Arrays.asList("place", "destroys", "deads","mobdie", "onlinetime");
-
-        UUID uuid = player.getUniqueId();
-        JSONObject playersData = pluginInstance.getPlayersData();
-        JSONObject playerData = (JSONObject) playersData.get(uuid.toString());
-
-        if (playerData != null) {
-            // 只将特定键值设为 0
-            for (String key : specificKeys) {
-                if (!key.equals(rankingValue)) {
-                    playerData.put(key, 0L); // 设置为0L，即Long类型的0
-                }
-            }
-
-            // 切换当前键值的状态
-            if (specificKeys.contains(rankingValue)) {
-                long currentValue = playerData.containsKey(rankingValue) ? (long) playerData.get(rankingValue) : 0;
-                long newStatus = (currentValue == 0) ? 1 : 0; // 将newStatus设为long类型
-                playerData.put(rankingValue, newStatus);
-            }
-
-            //Bukkit.getLogger().warning("加载了playerData  " + playerData.toJSONString());
-            // 保存玩家数据到文件
-            pluginInstance.saveJSONAsync(playersData, pluginInstance.getDataFile());
-        }
-    }
-
-
-
-
-
-
 
     private void clearScoreboard(Player player) {
         Bukkit.getLogger().warning("Player player  " + player);
@@ -241,9 +219,32 @@ public class RankingCommand implements CommandExecutor {
         }
     }
 
+    private void displayHelpMessage(Player player) {
+        TextComponent message = new TextComponent("§9§l=== §b§l");
+        TextComponent rankingLink = new TextComponent("[Ranking]");
+        rankingLink.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/Chlna6666/Ranking"));
+        TextComponent helpMessage = new TextComponent(" §9§l帮助 §f§lby Chlna6666 §9§l===\n");
 
+        message.addExtra(rankingLink);
+        message.addExtra(helpMessage);
 
+        TextComponent place = new TextComponent("§b/ranking place §f- §7查看放置榜\n");
+        place.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking place"));
+        TextComponent destroys = new TextComponent("§b/ranking destroys §f- §7查看挖掘榜\n");
+        destroys.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking destroys"));
+        TextComponent deads = new TextComponent("§b/ranking deads §f- §7查看死亡榜\n");
+        deads.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking deads"));
+        TextComponent mobdie = new TextComponent("§b/ranking mobdie §f- §7查看击杀榜\n");
+        mobdie.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking mobdie"));
+        TextComponent onlinetime = new TextComponent("§b/ranking onlinetime §f- §7查看在线时长榜\n");
+        onlinetime.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking onlinetime"));
+        TextComponent all = new TextComponent("§b/ranking all §f- §7查看所有排行榜\n");
+        all.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking all"));
+        TextComponent my = new TextComponent("§b/ranking my §f- §7查看自己的所有排行榜数据\n");
+        my.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking my"));
+        TextComponent list = new TextComponent("§b/ranking list <ranking_name> §f- §7查看指定排行榜数据\n");
+        list.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking list <ranking_name>"));
 
-
-
+        player.spigot().sendMessage(message, place, destroys, deads, mobdie, onlinetime, all, my, list);
+    }
 }
