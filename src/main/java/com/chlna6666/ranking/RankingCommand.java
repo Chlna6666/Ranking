@@ -20,9 +20,11 @@ import java.util.stream.Collectors;
 
 public class RankingCommand implements CommandExecutor {
     private final Ranking pluginInstance;
+    private final DataManager dataManager;
 
-    public RankingCommand(Ranking pluginInstance) {
+    public RankingCommand(Ranking pluginInstance, DataManager dataManager) {
         this.pluginInstance = pluginInstance;
+        this.dataManager = dataManager;
     }
 
     @Override
@@ -41,19 +43,19 @@ public class RankingCommand implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "place":
-                handleScoreboardToggle(player, "place", "放置榜", pluginInstance.getplaceData());
+                handleScoreboardToggle(player, "place", "放置榜", dataManager.getPlaceData());
                 break;
             case "destroys":
-                handleScoreboardToggle(player, "destroys", "挖掘榜", pluginInstance.getdestroysData());
+                handleScoreboardToggle(player, "destroys", "挖掘榜", dataManager.getDestroysData());
                 break;
             case "deads":
-                handleScoreboardToggle(player, "deads", "死亡榜", pluginInstance.getdeadsData());
+                handleScoreboardToggle(player, "deads", "死亡榜", dataManager.getDeadsData());
                 break;
             case "mobdie":
-                handleScoreboardToggle(player, "mobdie", "击杀榜", pluginInstance.getmobdieData());
+                handleScoreboardToggle(player, "mobdie", "击杀榜", dataManager.getMobdieData());
                 break;
             case "onlinetime":
-                handleScoreboardToggle(player, "onlinetime", "时长榜", pluginInstance.getonlinetimeData());
+                handleScoreboardToggle(player, "onlinetime", "时长榜", dataManager.getOnlinetimeData());
                 break;
             case "all":
                 displayAllRankings(player);
@@ -80,7 +82,7 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void handleScoreboardToggle(Player player, String rankingName, String displayName, Map<String, Long> rankingData) {
-        updateScoreboardStatus(player, pluginInstance, rankingName);
+        updateScoreboardStatus(player, rankingName);
         int scoreboardStatus = getPlayerScoreboardStatus(player, rankingName);
 
         if (scoreboardStatus == 1) {
@@ -95,39 +97,39 @@ public class RankingCommand implements CommandExecutor {
 
     private void displayAllRankings(Player player) {
         player.sendMessage(ChatColor.GOLD + "所有排行榜数据：");
-        displayRankingData(player, "放置榜", pluginInstance.getplaceData());
-        displayRankingData(player, "挖掘榜", pluginInstance.getdestroysData());
-        displayRankingData(player, "死亡榜", pluginInstance.getdeadsData());
-        displayRankingData(player, "击杀榜", pluginInstance.getmobdieData());
-        displayRankingData(player, "时长榜", pluginInstance.getonlinetimeData());
+        displayRankingData(player, "放置榜", dataManager.getPlaceData());
+        displayRankingData(player, "挖掘榜", dataManager.getDestroysData());
+        displayRankingData(player, "死亡榜", dataManager.getDeadsData());
+        displayRankingData(player, "击杀榜", dataManager.getMobdieData());
+        displayRankingData(player, "时长榜", dataManager.getOnlinetimeData());
     }
 
     private void displayPlayerRankings(Player player) {
         UUID uuid = player.getUniqueId();
         player.sendMessage(ChatColor.GOLD + "你的所有排行榜数据：");
-        displayPlayerData(player, "放置榜", pluginInstance.getplaceData(), uuid);
-        displayPlayerData(player, "挖掘榜", pluginInstance.getdestroysData(), uuid);
-        displayPlayerData(player, "死亡榜", pluginInstance.getdeadsData(), uuid);
-        displayPlayerData(player, "击杀榜", pluginInstance.getmobdieData(), uuid);
-        displayPlayerData(player, "时长榜", pluginInstance.getonlinetimeData(), uuid);
+        displayPlayerData(player, "放置榜", dataManager.getPlaceData(), uuid);
+        displayPlayerData(player, "挖掘榜", dataManager.getDestroysData(), uuid);
+        displayPlayerData(player, "死亡榜", dataManager.getDeadsData(), uuid);
+        displayPlayerData(player, "击杀榜", dataManager.getMobdieData(), uuid);
+        displayPlayerData(player, "时长榜", dataManager.getOnlinetimeData(), uuid);
     }
 
     private void handleSingleRanking(Player player, String rankingName) {
         switch (rankingName.toLowerCase()) {
             case "place":
-                displayRankingData(player, "放置榜", pluginInstance.getplaceData());
+                displayRankingData(player, "放置榜", dataManager.getPlaceData());
                 break;
             case "destroys":
-                displayRankingData(player, "挖掘榜", pluginInstance.getdestroysData());
+                displayRankingData(player, "挖掘榜", dataManager.getDestroysData());
                 break;
             case "deads":
-                displayRankingData(player, "死亡榜", pluginInstance.getdeadsData());
+                displayRankingData(player, "死亡榜", dataManager.getDeadsData());
                 break;
             case "mobdie":
-                displayRankingData(player, "击杀榜", pluginInstance.getmobdieData());
+                displayRankingData(player, "击杀榜", dataManager.getMobdieData());
                 break;
             case "onlinetime":
-                displayRankingData(player, "时长榜", pluginInstance.getonlinetimeData());
+                displayRankingData(player, "时长榜", dataManager.getOnlinetimeData());
                 break;
             default:
                 player.sendMessage("未知的排行榜名称，请使用 /ranking help 查看帮助信息。");
@@ -158,11 +160,11 @@ public class RankingCommand implements CommandExecutor {
         }
     }
 
-    private void updateScoreboardStatus(Player player, Ranking pluginInstance, String rankingValue) {
+    private void updateScoreboardStatus(Player player, String rankingValue) {
         List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime");
 
         UUID uuid = player.getUniqueId();
-        JSONObject playersData = pluginInstance.getPlayersData();
+        JSONObject playersData = dataManager.getPlayersData();
         JSONObject playerData = (JSONObject) playersData.get(uuid.toString());
 
         if (playerData != null) {
@@ -178,12 +180,12 @@ public class RankingCommand implements CommandExecutor {
                 playerData.put(rankingValue, newStatus);
             }
 
-            pluginInstance.saveJSONAsync(playersData, pluginInstance.getDataFile());
+            dataManager.saveJSONAsync(playersData, dataManager.getDataFile());
         }
     }
 
     private int getPlayerScoreboardStatus(Player player, String rankingValue) {
-        JSONObject playerData = getPlayerData(player, pluginInstance);
+        JSONObject playerData = getPlayerData(player);
         if (playerData != null && playerData.containsKey(rankingValue)) {
             Object value = playerData.get(rankingValue);
             if (value instanceof Long) {
@@ -199,9 +201,9 @@ public class RankingCommand implements CommandExecutor {
         return 0;
     }
 
-    private JSONObject getPlayerData(Player player, Ranking pluginInstance) {
+    private JSONObject getPlayerData(Player player) {
         UUID uuid = player.getUniqueId();
-        JSONObject playersData = pluginInstance.getPlayersData();
+        JSONObject playersData = dataManager.getPlayersData();
         return (JSONObject) playersData.get(uuid.toString());
     }
 

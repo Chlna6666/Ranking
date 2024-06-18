@@ -1,6 +1,6 @@
 name: Ranking
 authors: [ Chlna6666 ]
-version: '1.1.2'
+version: '1.1.3'
 main: com.chlna6666.ranking.Ranking
 
 api-version: '1.13'
@@ -31,6 +31,18 @@ commands:
       onlinetime:
         description: 开启和关闭排名显示
         usage: /ranking onlinetime
+        permission: ''
+      all:
+        description: 输出所有排行榜的全部数据
+        usage: /ranking all
+        permission: ''
+      my:
+        description: 输出玩家自己的所有排行榜数据
+        usage: /ranking my
+        permission: ''
+      list:
+        description: 输出指定排行榜的全部数据
+        usage: /ranking list
         permission: ''
       help:
         description: 帮助

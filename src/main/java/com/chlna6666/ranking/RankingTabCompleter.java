@@ -19,7 +19,16 @@ public class RankingTabCompleter implements TabCompleter {
             subCommands.add("deads");
             subCommands.add("mobdie");
             subCommands.add("onlinetime");
+            subCommands.add("all");
+            subCommands.add("my");
+            subCommands.add("list");
             subCommands.add("help");
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
+            subCommands.add("place");
+            subCommands.add("destroys");
+            subCommands.add("deads");
+            subCommands.add("mobdie");
+            subCommands.add("onlinetime");
         }
 
         return subCommands;

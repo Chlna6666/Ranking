@@ -9,15 +9,15 @@ import org.json.simple.JSONObject;
 import java.util.*;
 
 public class Papi extends PlaceholderExpansion {
-    private Ranking pluginInstance;
+    private final DataManager dataManager;
 
-    public Papi(Ranking pluginInstance) {
-        this.pluginInstance = pluginInstance;
+    public Papi(Ranking pluginInstance, DataManager dataManager) {
+        this.dataManager = dataManager;
     }
 
     @Override
     public String getAuthor() {
-        return String.join(", ", pluginInstance.getDescription().getAuthors());
+        return "Chlna6666";
     }
 
     @Override
@@ -27,7 +27,7 @@ public class Papi extends PlaceholderExpansion {
 
     @Override
     public String getVersion() {
-        return pluginInstance.getDescription().getVersion();
+        return "1.0.0";
     }
 
     @Override
@@ -37,280 +37,80 @@ public class Papi extends PlaceholderExpansion {
 
     @Override
     public boolean canRegister() {
-        boolean result = pluginInstance != null;
-        if (!result) {
-            Bukkit.getLogger().warning("[Papi] pluginInstance is null! Placeholder will not be registered.");
-        }
-        return result;
+        return true;
     }
 
-
     @Override
-
-    public String onRequest(OfflinePlayer player, String params) {
-        if (params.equalsIgnoreCase("place") && pluginInstance != null) {
-            JSONObject jsonData = pluginInstance.getplaceData();
-            if (jsonData != null && player != null) {
-                String playerUUID = player.getUniqueId().toString();
-                Object playerPlaceCount = jsonData.get(playerUUID);
-                if (playerPlaceCount != null) {
-                    return String.valueOf(playerPlaceCount);
+    public String onRequest(OfflinePlayer player, @NotNull String params) {
+        switch (params.toLowerCase()) {
+            case "place":
+                return getPlayerCount(player, dataManager.getPlaceData());
+            case "destroys":
+                return getPlayerCount(player, dataManager.getDestroysData());
+            case "deads":
+                return getPlayerCount(player, dataManager.getDeadsData());
+            case "mobdie":
+                return getPlayerCount(player, dataManager.getMobdieData());
+            case "onlinetime":
+                return getPlayerCount(player, dataManager.getOnlinetimeData());
+            default:
+                if (params.startsWith("place_")) {
+                    return getRankingEntry(player, params, dataManager.getPlaceData());
+                } else if (params.startsWith("destroys_")) {
+                    return getRankingEntry(player, params, dataManager.getDestroysData());
+                } else if (params.startsWith("deads_")) {
+                    return getRankingEntry(player, params, dataManager.getDeadsData());
+                } else if (params.startsWith("mobdie_")) {
+                    return getRankingEntry(player, params, dataManager.getMobdieData());
+                } else if (params.startsWith("onlinetime_")) {
+                    return getRankingEntry(player, params, dataManager.getOnlinetimeData());
                 }
+                return null;
+        }
+    }
+
+    private String getPlayerCount(OfflinePlayer player, JSONObject jsonData) {
+        if (jsonData != null && player != null) {
+            String playerUUID = player.getUniqueId().toString();
+            Object playerCount = jsonData.get(playerUUID);
+            if (playerCount != null) {
+                return String.valueOf(playerCount);
             }
         }
-     /*
-     if (params.equalsIgnoreCase("allplace") && pluginInstance != null) {
-            JSONObject jsonData = pluginInstance.getplaceData();
-            if (jsonData != null) {
-                StringBuilder result = new StringBuilder();
-                for (Object key : jsonData.keySet()) {
-                    String playerUUID = (String) key;
-                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(playerUUID));
-                    if (offlinePlayer != null) {
-                        String playerName = offlinePlayer.getName();
-                        Object playerPlaceCount = jsonData.get(playerUUID);
-                        if (playerPlaceCount != null) {
-                            result.append(playerName).append(": ").append(playerPlaceCount).append(" ");
-                        }
-                    }
-                }
-                return result.toString().trim();
-            }
-        }
-        */
-        JSONObject placeData = pluginInstance.getplaceData();
+        return null;
+    }
 
-        if (placeData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(placeData.entrySet());
-
-            Collections.sort(sortedEntries, (a, b) -> {
-                int placeA = Integer.parseInt(a.getValue().toString());
-                int placeB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(placeA, placeB);
+    private String getRankingEntry(OfflinePlayer player, String params, JSONObject jsonData) {
+        if (jsonData != null) {
+            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(jsonData.entrySet());
+            sortedEntries.sort((a, b) -> {
+                int countA = Integer.parseInt(a.getValue().toString());
+                int countB = Integer.parseInt(b.getValue().toString());
+                return Integer.compare(countB, countA); // 降序排列
             });
 
             int totalPlayers = sortedEntries.size();
             OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
 
-            for (int i = totalPlayers; i > 0; i--) {
-                Map.Entry<String, Object> entry = sortedEntries.get(totalPlayers - i);
+            for (int i = 1; i <= totalPlayers; i++) {
+                Map.Entry<String, Object> entry = sortedEntries.get(i - 1);
                 String uuidKey = entry.getKey();
-                Object placeCount = entry.getValue();
+                Object count = entry.getValue();
 
-                if (params.equalsIgnoreCase("place_" + i)) {
+                if (params.equalsIgnoreCase(params.split("_")[0] + "_" + i)) {
                     OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));
                     if (targetPlayer != null) {
                         String playerName = targetPlayer.getName();
-                        String placeDataStr = String.valueOf(placeCount);
+                        String countStr = String.valueOf(count);
                         if (targetPlayer.equals(currentPlayer)) {
-                            placeDataStr += " (我)";
+                            countStr += " (我)";
                         }
-                        return playerName + ": " + placeDataStr;
+                        return playerName + ": " + countStr;
                     }
                 }
             }
-
-            if (params.startsWith("place_")) {
-                return "";
-            }
+            return "";
         }
-
-
-
-        if (params.equalsIgnoreCase("destroys") && pluginInstance != null) {
-            JSONObject jsonData = pluginInstance.getdestroysData();
-            if (jsonData != null && player != null) {
-                String playerUUID = player.getUniqueId().toString();
-                Object playerPlaceCount = jsonData.get(playerUUID);
-                if (playerPlaceCount != null) {
-                    return String.valueOf(playerPlaceCount);
-                }
-            }
-        }
-
-        JSONObject destroysData = pluginInstance.getdestroysData();
-
-        if (destroysData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(destroysData.entrySet());
-
-            Collections.sort(sortedEntries, (a, b) -> {
-                int destroysA = Integer.parseInt(a.getValue().toString());
-                int destroysB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(destroysA, destroysB);
-            });
-
-            int totalPlayers = sortedEntries.size();
-            OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
-
-            for (int i = totalPlayers; i > 0; i--) {
-                Map.Entry<String, Object> entry = sortedEntries.get(totalPlayers - i);
-                String uuidKey = entry.getKey();
-                Object placeCount = entry.getValue();
-
-                if (params.equalsIgnoreCase("destroys_" + i)) {
-                    OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));
-                    if (targetPlayer != null) {
-                        String playerName = targetPlayer.getName();
-                        String destroysDataStr = String.valueOf(placeCount);
-                        if (targetPlayer.equals(currentPlayer)) {
-                            destroysDataStr += " (我)";
-                        }
-                        return playerName + ": " + destroysDataStr;
-                    }
-                }
-            }
-
-            if (params.startsWith("destroys_")) {
-                return "";
-            }
-        }
-
-
-        if (params.equalsIgnoreCase("deads") && pluginInstance != null) {
-            JSONObject jsonData = pluginInstance.getdeadsData();
-            if (jsonData != null && player != null) {
-                String playerUUID = player.getUniqueId().toString();
-                Object playerPlaceCount = jsonData.get(playerUUID);
-                if (playerPlaceCount != null) {
-                    return String.valueOf(playerPlaceCount);
-                }
-            }
-        }
-
-        JSONObject deadsData = pluginInstance.getdeadsData();
-
-        if (deadsData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(deadsData.entrySet());
-
-            Collections.sort(sortedEntries, (a, b) -> {
-                int deadsA = Integer.parseInt(a.getValue().toString());
-                int deadsB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(deadsA, deadsB);
-            });
-
-            int totalPlayers = sortedEntries.size();
-            OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
-
-            for (int i = totalPlayers; i > 0; i--) {
-                Map.Entry<String, Object> entry = sortedEntries.get(totalPlayers - i);
-                String uuidKey = entry.getKey();
-                Object placeCount = entry.getValue();
-
-                if (params.equalsIgnoreCase("deads_" + i)) {
-                    OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));
-                    if (targetPlayer != null) {
-                        String playerName = targetPlayer.getName();
-                        String deadsDataStr = String.valueOf(placeCount);
-                        if (targetPlayer.equals(currentPlayer)) {
-                            deadsDataStr += " (我)";
-                        }
-                        return playerName + ": " + deadsDataStr;
-                    }
-                }
-            }
-
-            if (params.startsWith("deads_")) {
-                return "";
-            }
-        }
-
-        if (params.equalsIgnoreCase("mobdie") && pluginInstance != null) {
-            JSONObject jsonData = pluginInstance.getmobdieData();
-            if (jsonData != null && player != null) {
-                String playerUUID = player.getUniqueId().toString();
-                Object playerPlaceCount = jsonData.get(playerUUID);
-                if (playerPlaceCount != null) {
-                    return String.valueOf(playerPlaceCount);
-                }
-            }
-        }
-
-        JSONObject mobdieData = pluginInstance.getmobdieData();
-
-        if (mobdieData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(placeData.entrySet());
-
-            Collections.sort(sortedEntries, (a, b) -> {
-                int mobdieA = Integer.parseInt(a.getValue().toString());
-                int mobdieB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(mobdieA, mobdieB);
-            });
-
-            int totalPlayers = sortedEntries.size();
-            OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
-
-            for (int i = totalPlayers; i > 0; i--) {
-                Map.Entry<String, Object> entry = sortedEntries.get(totalPlayers - i);
-                String uuidKey = entry.getKey();
-                Object placeCount = entry.getValue();
-
-                if (params.equalsIgnoreCase("mobdie_" + i)) {
-                    OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));
-                    if (targetPlayer != null) {
-                        String playerName = targetPlayer.getName();
-                        String mobdieDataStr = String.valueOf(placeCount);
-                        if (targetPlayer.equals(currentPlayer)) {
-                            mobdieDataStr += " (我)";
-                        }
-                        return playerName + ": " + mobdieDataStr;
-                    }
-                }
-            }
-
-            if (params.startsWith("mobdie_")) {
-                return "";
-            }
-        }
-
-        if (params.equalsIgnoreCase("onlinetime") && pluginInstance != null) {
-            JSONObject jsonData = pluginInstance.getonlinetimeData();
-            if (jsonData != null && player != null) {
-                String playerUUID = player.getUniqueId().toString();
-                Object playerPlaceCount = jsonData.get(playerUUID);
-                if (playerPlaceCount != null) {
-                    return String.valueOf(playerPlaceCount);
-                }
-            }
-        }
-
-        JSONObject onlinetimeData = pluginInstance.getonlinetimeData();
-
-        if (onlinetimeData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(onlinetimeData.entrySet());
-
-            Collections.sort(sortedEntries, (a, b) -> {
-                int onlinetimeA = Integer.parseInt(a.getValue().toString());
-                int onlinetimeB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(onlinetimeA, onlinetimeB);
-            });
-
-            int totalPlayers = sortedEntries.size();
-            OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
-
-            for (int i = totalPlayers; i > 0; i--) {
-                Map.Entry<String, Object> entry = sortedEntries.get(totalPlayers - i);
-                String uuidKey = entry.getKey();
-                Object placeCount = entry.getValue();
-
-                if (params.equalsIgnoreCase("onlinetime_" + i)) {
-                    OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));
-                    if (targetPlayer != null) {
-                        String playerName = targetPlayer.getName();
-                        String onlinetimeDataStr = String.valueOf(placeCount);
-                        if (targetPlayer.equals(currentPlayer)) {
-                            onlinetimeDataStr += " (我)";
-                        }
-                        return playerName + ": " + onlinetimeDataStr;
-                    }
-                }
-            }
-
-            if (params.startsWith("onlinetime_")) {
-                return "";
-            }
-        }
-
-
         return null;
     }
 }
