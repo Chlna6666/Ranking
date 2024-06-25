@@ -1,0 +1,8 @@
+i18n:
+  loaded_language: "已加载语言文件: "
+update_checker:
+  connection_failed: "连接更新服务器失败。响应代码: {code}"
+  connection_reset: "连接重置。请检查您的网络连接。"
+  new_version_found: "发现新版本"
+  download_link: "下载链接"
+  error_checking_updates: "检查更新时出错"

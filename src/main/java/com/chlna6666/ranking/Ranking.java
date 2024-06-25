@@ -1,5 +1,6 @@
 package com.chlna6666.ranking;
 
+import com.chlna6666.ranking.I18n.I18n;
 import com.chlna6666.ranking.updatechecker.UpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public class Ranking extends JavaPlugin implements Listener {
 
     private ConfigManager configManager;
+    private I18n i18n;
     private DataManager dataManager;
     private UpdateChecker updateChecker;
     private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
@@ -53,14 +55,11 @@ public class Ranking extends JavaPlugin implements Listener {
 
         configManager = new ConfigManager(this);
         dataManager = new DataManager(this);
-        loadConfigValues();
-        copyLangFiles();
-
-        String languageOption = getConfig().getString("language");
-        File langFile = new File(getDataFolder(), "lang/" + languageOption + ".yml");
-        YamlConfiguration.loadConfiguration(langFile);
-
         logPluginInfo();
+
+        i18n = new I18n(this);
+        i18n.copyDefaultLanguageFiles();
+        //getLogger().info(i18n.translate("plugin.enabled"));
 
         int pluginId = 21233;
         new Metrics(this, pluginId);
@@ -72,9 +71,11 @@ public class Ranking extends JavaPlugin implements Listener {
             new Papi(this, dataManager).register();
         }
 
+        loadConfigValues();
         startRegularSaveTask();
+
         updateChecker = new UpdateChecker(this);
-        updateChecker.checkForUpdates();
+        updateChecker.checkForUpdates(null);
     }
 
     @Override
@@ -88,12 +89,6 @@ public class Ranking extends JavaPlugin implements Listener {
         REGULAR_SAVE_INTERVAL_TICKS = config.getLong("data_storage.regular_save_interval");
     }
 
-    private void copyLangFiles() {
-        File langFolder = new File(getDataFolder(), "lang");
-        if (!langFolder.exists()) {
-            langFolder.mkdirs();
-        }
-    }
 
     private void logPluginInfo() {
         Bukkit.getLogger().info("");
@@ -155,7 +150,7 @@ public class Ranking extends JavaPlugin implements Listener {
         String playerName = player.getName();
 
         if (player.hasPermission("ranking.update.notify") && getConfig().getBoolean("update_checker.notify_on_login")) {
-            updateChecker.notifyAdminIfUpdateAvailable(player);
+            updateChecker.checkForUpdates(player);
         }
 
         if (!dataManager.getPlayersData().containsKey(uuid.toString())) {
@@ -294,5 +289,9 @@ public class Ranking extends JavaPlugin implements Listener {
 
     public long getSaveDelayTicks() {
         return SAVE_DELAY_TICKS;
+    }
+
+    public I18n getI18n() {
+        return i18n;
     }
 }

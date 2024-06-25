@@ -1,9 +1,11 @@
 package com.chlna6666.ranking.updatechecker;
 
+import com.chlna6666.ranking.Ranking;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -18,6 +20,8 @@ public class UpdateChecker {
     private final JavaPlugin plugin;
     private final String apiUrl = "https://api.minebbs.com/api/openapi/v1/resources/7531";
     private final FileConfiguration config;
+    private boolean warningSent = false;
+    private boolean updateAvailable = false;
     private String latestVersion;
     private String viewUrl;
 
@@ -26,7 +30,7 @@ public class UpdateChecker {
         this.config = plugin.getConfig();
     }
 
-    public void checkForUpdates() {
+    public void checkForUpdates(CommandSender sender) {
         if (!config.getBoolean("update_checker.enabled")) return;
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -34,12 +38,12 @@ public class UpdateChecker {
                 URL url = new URL(apiUrl);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000); // 设置连接超时为5秒
-                connection.setReadTimeout(5000);    // 设置读取超时为5秒
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    logWarning("连接更新服务器失败。响应代码: " + responseCode);
+                    logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_failed").replace("{code}", String.valueOf(responseCode)));
                     return;
                 }
 
@@ -59,27 +63,38 @@ public class UpdateChecker {
                 viewUrl = (String) data.get("view_url");
 
                 if (!plugin.getDescription().getVersion().equals(latestVersion)) {
-                    String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + "发现新版本: " + latestVersion +
-                            ChatColor.GOLD + " 下载链接: " + ChatColor.AQUA + viewUrl;
-                    Bukkit.getScheduler().runTask(plugin, () -> Bukkit.getConsoleSender().sendMessage(message));
+                    String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
+                            ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (sender != null) {
+                            sender.sendMessage(message);
+                        } else {
+                            Bukkit.getConsoleSender().sendMessage(message);
+                        }
+                    });
                 }
             } catch (SocketException e) {
-                logWarning("连接重置。请检查您的网络连接。");
+                logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
             } catch (Exception e) {
-                plugin.getLogger().severe("[Ranking] 更新检查器: 无法检查更新: " + e.getMessage());
+                plugin.getLogger().severe("[Ranking] " + ((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
             }
         });
     }
 
-    public void notifyAdminIfUpdateAvailable(CommandSender sender) {
-        if (latestVersion != null && !plugin.getDescription().getVersion().equals(latestVersion)) {
-            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + "发现新版本: " + latestVersion +
-                    ChatColor.GOLD + " 下载链接: " + ChatColor.AQUA + viewUrl;
-            sender.sendMessage(message);
+    public void notifyAdminIfUpdateAvailable(Player player) {
+        if (updateAvailable && player.hasPermission("ranking.update.notify")) {
+            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
+                    ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
+            player.sendMessage(message);
         }
     }
 
     private void logWarning(String message) {
-        Bukkit.getLogger().warning("更新检查器: " + message);
+        if (!warningSent) {
+            Bukkit.getLogger().warning("更新检查器: " + message);
+            warningSent = true;
+            // 在一分钟后重置标志位
+            Bukkit.getScheduler().runTaskLater(plugin, () -> warningSent = false, 1200L); // 1200 ticks = 1 minute
+        }
     }
 }

@@ -1,0 +1,8 @@
+i18n:
+  loaded_language: "Loaded language file: "
+update_checker:
+  connection_failed: "Connection to the update server failed. Response code: {code}"
+  connection_reset: "Connection reset. Please check your network connection."
+  new_version_found: "New version found"
+  download_link: "Download link"
+  error_checking_updates: "Error checking for updates"

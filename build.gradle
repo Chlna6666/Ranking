@@ -3,13 +3,17 @@ plugins {
 }
 
 group 'com.chlna6666'
-version '1.1.3'
+version '1.1.1'
 
 repositories {
     mavenCentral()
     maven {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
+    }
+    maven {
+        name = 'leavesmc-repo'
+        url = 'https://repo.leavesmc.org/snapshots/'
     }
     maven {
         name = "sonatype"
