@@ -1,7 +1,12 @@
 # 排行榜插件配置文件
 
 # 选择语言
-language: en_US  # 可选值: en_US (English), zh_CN (简体中文)
+language: zh_CN  # 可选值: en_US (English), zh_CN (简体中文)
+
+# 更新检查器设置
+update_checker:
+  enabled: true   # 是否启用更新检查器
+  notify_on_login: true   # 管理员登录时是否提醒更新
 
 # 排行榜开关设置
 leaderboards:

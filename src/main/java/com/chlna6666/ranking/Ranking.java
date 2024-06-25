@@ -1,5 +1,6 @@
 package com.chlna6666.ranking;
 
+import com.chlna6666.ranking.updatechecker.UpdateChecker;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandExecutor;
@@ -35,6 +36,7 @@ public class Ranking extends JavaPlugin implements Listener {
 
     private ConfigManager configManager;
     private DataManager dataManager;
+    private UpdateChecker updateChecker;
     private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
 
     private long SAVE_DELAY_TICKS;
@@ -71,6 +73,8 @@ public class Ranking extends JavaPlugin implements Listener {
         }
 
         startRegularSaveTask();
+        updateChecker = new UpdateChecker(this);
+        updateChecker.checkForUpdates();
     }
 
     @Override
@@ -149,6 +153,10 @@ public class Ranking extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         String playerName = player.getName();
+
+        if (player.hasPermission("ranking.update.notify") && getConfig().getBoolean("update_checker.notify_on_login")) {
+            updateChecker.notifyAdminIfUpdateAvailable(player);
+        }
 
         if (!dataManager.getPlayersData().containsKey(uuid.toString())) {
             JSONObject playerInfo = new JSONObject();
