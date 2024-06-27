@@ -62,7 +62,7 @@ public class UpdateChecker {
                 latestVersion = (String) data.get("version");
                 viewUrl = (String) data.get("view_url");
 
-                if (!plugin.getDescription().getVersion().equals(latestVersion)) {
+                if (isVersionHigher(latestVersion, plugin.getDescription().getVersion())) {
                     String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
                             ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
                     Bukkit.getScheduler().runTask(plugin, () -> {
@@ -76,18 +76,29 @@ public class UpdateChecker {
             } catch (SocketException e) {
                 logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
             } catch (Exception e) {
-                plugin.getLogger().severe("[Ranking] " + ((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
+                plugin.getLogger().severe(  ((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
             }
         });
     }
 
-    public void notifyAdminIfUpdateAvailable(Player player) {
-        if (updateAvailable && player.hasPermission("ranking.update.notify")) {
-            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
-                    ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
-            player.sendMessage(message);
+    private boolean isVersionHigher(String remoteVersion, String currentVersion) {
+        String[] remoteParts = remoteVersion.replace("v", "").split("\\.");
+        String[] currentParts = currentVersion.replace("v", "").split("\\.");
+
+        int length = Math.max(remoteParts.length, currentParts.length);
+        for (int i = 0; i < length; i++) {
+            int remotePart = i < remoteParts.length ? Integer.parseInt(remoteParts[i]) : 0;
+            int currentPart = i < currentParts.length ? Integer.parseInt(currentParts[i]) : 0;
+
+            if (remotePart > currentPart) {
+                return true;
+            } else if (remotePart < currentPart) {
+                return false;
+            }
         }
+        return false;
     }
+
 
     private void logWarning(String message) {
         if (!warningSent) {

@@ -208,7 +208,7 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void clearScoreboard(Player player) {
-        Bukkit.getLogger().warning("Player player  " + player);
+        //Bukkit.getLogger().warning("Player player  " + player);
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         Scoreboard newScoreboard = scoreboardManager.getNewScoreboard();  // 创建新的空白记分板
         player.setScoreboard(newScoreboard);  // 将新的空白记分板设置给玩家

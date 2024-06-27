@@ -1,7 +1,10 @@
 # 排行榜插件配置文件
-
 # 选择语言
 language: zh_CN  # 可选值: en_US (English), zh_CN (简体中文)
+
+# bStats 开关
+bstats:
+  enabled: true  # 是否启用 bStats 统计
 
 # 更新检查器设置
 update_checker:
@@ -22,13 +25,3 @@ data_storage:
   location: /plugins/Ranking/data   # 数据存储位置，仅在选择 json 存储方式时有效
   save_delay: 100  # 保存延迟，单位为ticks (1 tick = 50 ms)
   regular_save_interval: 1200  # 定期保存间隔，单位为ticks (1 tick = 50 ms)
-
-# 数据库连接设置
-database:
-  method: db   # 数据库存储方式，可选值: db (内置数据库), mysql (MySQL 数据库)
-  location: /plugins/Ranking/database.db   # 数据库存储位置，仅在选择 db 存储方式时有效
-  host: localhost   # MySQL 数据库主机地址，仅在选择 mysql 存储方式时有效
-  port: 3306   # MySQL 数据库端口，仅在选择 mysql 存储方式时有效
-  username: root   # MySQL 数据库用户名，仅在选择 mysql 存储方式时有效
-  password: password   # MySQL 数据库密码，仅在选择 mysql 存储方式时有效
-  database_name: ranking_data   # MySQL 数据库名称，仅在选择 mysql 存储方式时有效
