@@ -25,7 +25,6 @@ import com.chlna6666.ranking.metrics.Metrics;
 import org.json.simple.JSONObject;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,9 +38,6 @@ public class Ranking extends JavaPlugin implements Listener {
     private I18n i18n;
     private DataManager dataManager;
     private UpdateChecker updateChecker;
-
-    private ScoreboardManager scoreboardManager;
-    private Scoreboard sharedScoreboard;
 
     private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
 
@@ -70,12 +66,8 @@ public class Ranking extends JavaPlugin implements Listener {
             new Metrics(this, pluginId);
         }
 
-
         getServer().getPluginManager().registerEvents(this, this);
         registerCommands();
-
-        scoreboardManager = Bukkit.getScoreboardManager();
-        sharedScoreboard = scoreboardManager.getNewScoreboard();
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new Papi(this, dataManager).register();

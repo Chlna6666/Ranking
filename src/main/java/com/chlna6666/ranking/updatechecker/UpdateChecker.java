@@ -21,7 +21,6 @@ public class UpdateChecker {
     private final String apiUrl = "https://api.minebbs.com/api/openapi/v1/resources/7531";
     private final FileConfiguration config;
     private boolean warningSent = false;
-    private boolean updateAvailable = false;
     private String latestVersion;
     private String viewUrl;
 
