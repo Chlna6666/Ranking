@@ -11,11 +11,6 @@ papi:
 command:
   only_players: "只有玩家可以执行此命令！"
   usage_ranking: "使用方法: /ranking <子命令>"
-  place_board: "放置榜"
-  destroys_board: "挖掘榜"
-  deads_board: "死亡榜"
-  mobdie_board: "击杀榜"
-  onlinetime_board: "时长榜"
   enabled: "已开启！"
   disabled: "已关闭！"
   all_rankings: "所有排行榜数据："
@@ -34,3 +29,11 @@ command:
   view_all_boards: "查看所有排行榜"
   view_my_boards: "查看自己的所有排行榜数据"
   view_specific_board: "查看指定排行榜数据"
+sidebar:
+  place: "放置榜"
+  break: "挖掘榜"
+  death: "死亡榜"
+  kill: "击杀榜"
+  online_time: "在线时长榜"
+warning:
+  cannot_get_main_command: "无法获取 /ranking 主命令！"

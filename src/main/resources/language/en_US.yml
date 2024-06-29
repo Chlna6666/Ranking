@@ -11,11 +11,6 @@ papi:
 command:
   only_players: "Only players can execute this command!"
   usage_ranking: "Usage: /ranking <subcommand>"
-  place_board: "Place Board"
-  destroys_board: "Destroys Board"
-  deads_board: "Deads Board"
-  mobdie_board: "Mob Die Board"
-  onlinetime_board: "Online Time Board"
   enabled: "enabled!"
   disabled: "disabled!"
   all_rankings: "All ranking data:"
@@ -34,3 +29,9 @@ command:
   view_all_boards: "View all rankings"
   view_my_boards: "View your rankings"
   view_specific_board: "View specific ranking"
+sidebar:
+  place: "Place"
+  break: "Destroys"
+  death: "Deads"
+  kill: "Mob Die"
+  online_time: "Online Time"

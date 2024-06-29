@@ -112,29 +112,29 @@ public class Ranking extends JavaPlugin implements Listener {
             rankingCommand.setExecutor(rankingExecutor);
             rankingCommand.setTabCompleter(new RankingTabCompleter());
         } else {
-            getLogger().warning("无法获取 /ranking 主命令！");
+            getLogger().warning(i18n.translate("warning.cannot_get_main_command"));
         }
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        handleEvent(event.getPlayer(), "place", dataManager.getPlaceData(), dataManager.getPlaceFile(), "放置榜");
+        handleEvent(event.getPlayer(), "place", dataManager.getPlaceData(), dataManager.getPlaceFile(), i18n.translate("sidebar.place"));
     }
 
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
-        handleEvent(event.getPlayer(), "destroys", dataManager.getDestroysData(), dataManager.getDestroysFile(), "挖掘榜");
+        handleEvent(event.getPlayer(), "destroys", dataManager.getDestroysData(), dataManager.getDestroysFile(), i18n.translate("sidebar.break"));
     }
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        handleEvent(event.getEntity(), "deads", dataManager.getDeadsData(), dataManager.getDeadsFile(), "死亡榜");
+        handleEvent(event.getEntity(), "deads", dataManager.getDeadsData(), dataManager.getDeadsFile(), i18n.translate("sidebar.death"));
     }
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         if (event.getEntity().getKiller() != null) {
-            handleEvent(event.getEntity().getKiller().getPlayer(), "mobdie", dataManager.getMobdieData(), dataManager.getMobdieFile(), "击杀榜");
+            handleEvent(event.getEntity().getKiller().getPlayer(), "mobdie", dataManager.getMobdieData(), dataManager.getMobdieFile(), i18n.translate("sidebar.kill"));
         }
     }
 
@@ -182,11 +182,11 @@ public class Ranking extends JavaPlugin implements Listener {
 
     private void updatePlayerScoreboards(Player player, UUID uuid) {
         JSONObject playerData = (JSONObject) dataManager.getPlayersData().getOrDefault(uuid.toString(), new JSONObject());
-        checkAndUpdateScoreboard(player, playerData, "place", "放置榜", dataManager.getPlaceData());
-        checkAndUpdateScoreboard(player, playerData, "destroys", "挖掘榜", dataManager.getDestroysData());
-        checkAndUpdateScoreboard(player, playerData, "deads", "死亡榜", dataManager.getDeadsData());
-        checkAndUpdateScoreboard(player, playerData, "mobdie", "击杀榜", dataManager.getMobdieData());
-        checkAndUpdateScoreboard(player, playerData, "onlinetime", "时长榜", dataManager.getOnlinetimeData());
+        checkAndUpdateScoreboard(player, playerData, "place", i18n.translate("sidebar.place"), dataManager.getPlaceData());
+        checkAndUpdateScoreboard(player, playerData, "destroys", i18n.translate("sidebar.break"), dataManager.getDestroysData());
+        checkAndUpdateScoreboard(player, playerData, "deads", i18n.translate("sidebar.death"), dataManager.getDeadsData());
+        checkAndUpdateScoreboard(player, playerData, "mobdie", i18n.translate("sidebar.kill"), dataManager.getMobdieData());
+        checkAndUpdateScoreboard(player, playerData, "onlinetime", i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
     }
 
     private void checkAndUpdateScoreboard(Player player, JSONObject playerData, String dataType, String sidebarTitle, Map<String, Long> data) {
@@ -207,7 +207,7 @@ public class Ranking extends JavaPlugin implements Listener {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        updateScoreboards(player, "时长榜", dataManager.getOnlinetimeData(), "onlinetime");
+                        updateScoreboards(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData(), "onlinetime");
                     }
                 }.runTask(Ranking.this);
             }

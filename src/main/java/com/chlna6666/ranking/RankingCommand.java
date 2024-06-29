@@ -46,19 +46,19 @@ public class RankingCommand implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "place":
-                handleScoreboardToggle(player, "place", i18n.translate("command.place_board"), dataManager.getPlaceData());
+                handleScoreboardToggle(player, "place", i18n.translate("sidebar.place"), dataManager.getPlaceData());
                 break;
             case "destroys":
-                handleScoreboardToggle(player, "destroys", i18n.translate("command.destroys_board"), dataManager.getDestroysData());
+                handleScoreboardToggle(player, "destroys", i18n.translate("sidebar.break"), dataManager.getDestroysData());
                 break;
             case "deads":
-                handleScoreboardToggle(player, "deads", i18n.translate("command.deads_board"), dataManager.getDeadsData());
+                handleScoreboardToggle(player, "deads", i18n.translate("sidebar.death"), dataManager.getDeadsData());
                 break;
             case "mobdie":
-                handleScoreboardToggle(player, "mobdie", i18n.translate("command.mobdie_board"), dataManager.getMobdieData());
+                handleScoreboardToggle(player, "mobdie", i18n.translate("sidebar.kill"), dataManager.getMobdieData());
                 break;
             case "onlinetime":
-                handleScoreboardToggle(player, "onlinetime", i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData());
+                handleScoreboardToggle(player, "onlinetime", i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
                 break;
             case "all":
                 displayAllRankings(player);
@@ -100,39 +100,39 @@ public class RankingCommand implements CommandExecutor {
 
     private void displayAllRankings(Player player) {
         player.sendMessage(ChatColor.GOLD + i18n.translate("command.all_rankings"));
-        displayRankingData(player, i18n.translate("command.place_board"), dataManager.getPlaceData());
-        displayRankingData(player, i18n.translate("command.destroys_board"), dataManager.getDestroysData());
-        displayRankingData(player, i18n.translate("command.deads_board"), dataManager.getDeadsData());
-        displayRankingData(player, i18n.translate("command.mobdie_board"), dataManager.getMobdieData());
-        displayRankingData(player, i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData());
+        displayRankingData(player, i18n.translate("sidebar.place"), dataManager.getPlaceData());
+        displayRankingData(player, i18n.translate("sidebar.break"), dataManager.getDestroysData());
+        displayRankingData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData());
+        displayRankingData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData());
+        displayRankingData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
     }
 
     private void displayPlayerRankings(Player player) {
         UUID uuid = player.getUniqueId();
         player.sendMessage(ChatColor.GOLD + i18n.translate("command.your_rankings"));
-        displayPlayerData(player, i18n.translate("command.place_board"), dataManager.getPlaceData(), uuid);
-        displayPlayerData(player, i18n.translate("command.destroys_board"), dataManager.getDestroysData(), uuid);
-        displayPlayerData(player, i18n.translate("command.deads_board"), dataManager.getDeadsData(), uuid);
-        displayPlayerData(player, i18n.translate("command.mobdie_board"), dataManager.getMobdieData(), uuid);
-        displayPlayerData(player, i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData(), uuid);
+        displayPlayerData(player, i18n.translate("sidebar.place"), dataManager.getPlaceData(), uuid);
+        displayPlayerData(player, i18n.translate("sidebar.break"), dataManager.getDestroysData(), uuid);
+        displayPlayerData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData(), uuid);
+        displayPlayerData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData(), uuid);
+        displayPlayerData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData(), uuid);
     }
 
     private void handleSingleRanking(Player player, String rankingName) {
         switch (rankingName.toLowerCase()) {
             case "place":
-                displayRankingData(player, i18n.translate("command.place_board"), dataManager.getPlaceData());
+                displayRankingData(player, i18n.translate("sidebar.place"), dataManager.getPlaceData());
                 break;
             case "destroys":
-                displayRankingData(player, i18n.translate("command.destroys_board"), dataManager.getDestroysData());
+                displayRankingData(player, i18n.translate("sidebar.break"), dataManager.getDestroysData());
                 break;
             case "deads":
-                displayRankingData(player, i18n.translate("command.deads_board"), dataManager.getDeadsData());
+                displayRankingData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData());
                 break;
             case "mobdie":
-                displayRankingData(player, i18n.translate("command.mobdie_board"), dataManager.getMobdieData());
+                displayRankingData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData());
                 break;
             case "onlinetime":
-                displayRankingData(player, i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData());
+                displayRankingData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
                 break;
             default:
                 player.sendMessage(i18n.translate("command.unknown_ranking"));
