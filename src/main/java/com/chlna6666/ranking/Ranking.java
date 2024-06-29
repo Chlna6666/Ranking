@@ -25,6 +25,7 @@ import com.chlna6666.ranking.metrics.Metrics;
 import org.json.simple.JSONObject;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -70,8 +71,9 @@ public class Ranking extends JavaPlugin implements Listener {
         registerCommands();
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            new Papi(this, dataManager).register();
+            new Papi(this, dataManager, i18n).register();
         }
+
 
         loadConfigValues();
         startRegularSaveTask();
@@ -106,7 +108,7 @@ public class Ranking extends JavaPlugin implements Listener {
     private void registerCommands() {
         PluginCommand rankingCommand = getCommand("ranking");
         if (rankingCommand != null) {
-            CommandExecutor rankingExecutor = new RankingCommand(this, dataManager);
+            CommandExecutor rankingExecutor = new RankingCommand(this, dataManager, i18n);
             rankingCommand.setExecutor(rankingExecutor);
             rankingCommand.setTabCompleter(new RankingTabCompleter());
         } else {
@@ -257,32 +259,36 @@ public class Ranking extends JavaPlugin implements Listener {
                 objective.setDisplayName(sidebarTitle);
             }
 
+            Map<String, Integer> currentScores = new HashMap<>();
+            for (String entry : scoreboard.getEntries()) {
+                currentScores.put(entry, objective.getScore(entry).getScore());
+            }
+
             // 更新每个玩家的数据
             for (Map.Entry<String, Long> entry : data.entrySet()) {
                 String uuidString = entry.getKey();
-                long rankingData = entry.getValue();
+                int rankingData = entry.getValue().intValue();
                 OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
                 if (offlinePlayer != null) {
                     String playerName = offlinePlayer.getName();
-                    Score score = objective.getScore(playerName);
-                    if (score.getScore() != (int) rankingData) {
-                        score.setScore((int) rankingData);
+                    Integer currentScore = currentScores.get(playerName);
+                    if (currentScore == null || currentScore != rankingData) {
+                        Score score = objective.getScore(playerName);
+                        score.setScore(rankingData);
                     }
+                    currentScores.remove(playerName);
                 }
             }
 
             // 移除不在数据中的玩家
-            for (String entry : scoreboard.getEntries()) {
-                boolean exists = data.entrySet().stream().anyMatch(e -> {
-                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(e.getKey()));
-                    return offlinePlayer != null && offlinePlayer.getName().equals(entry);
-                });
-                if (!exists) {
-                    scoreboard.resetScores(entry);
-                }
+            for (String entry : currentScores.keySet()) {
+                scoreboard.resetScores(entry);
             }
+
+            onlinePlayer.setScoreboard(scoreboard);
         }
     }
+
 
 
     private void clearPlayerRankingObjective(Player player) {

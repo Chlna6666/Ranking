@@ -1,5 +1,8 @@
 package com.chlna6666.ranking;
 
+import com.chlna6666.ranking.I18n.I18n;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -7,8 +10,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
@@ -21,41 +22,43 @@ import java.util.stream.Collectors;
 public class RankingCommand implements CommandExecutor {
     private final Ranking pluginInstance;
     private final DataManager dataManager;
+    private final I18n i18n;
 
-    public RankingCommand(Ranking pluginInstance, DataManager dataManager) {
+    public RankingCommand(Ranking pluginInstance, DataManager dataManager, I18n i18n) {
         this.pluginInstance = pluginInstance;
         this.dataManager = dataManager;
+        this.i18n = i18n;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("只有玩家可以执行此命令！");
+            sender.sendMessage(i18n.translate("command.only_players"));
             return true;
         }
 
         Player player = (Player) sender;
 
         if (args.length == 0) {
-            sender.sendMessage("使用方法: /ranking <子命令>");
+            sender.sendMessage(i18n.translate("command.usage_ranking"));
             return true;
         }
 
         switch (args[0].toLowerCase()) {
             case "place":
-                handleScoreboardToggle(player, "place", "放置榜", dataManager.getPlaceData());
+                handleScoreboardToggle(player, "place", i18n.translate("command.place_board"), dataManager.getPlaceData());
                 break;
             case "destroys":
-                handleScoreboardToggle(player, "destroys", "挖掘榜", dataManager.getDestroysData());
+                handleScoreboardToggle(player, "destroys", i18n.translate("command.destroys_board"), dataManager.getDestroysData());
                 break;
             case "deads":
-                handleScoreboardToggle(player, "deads", "死亡榜", dataManager.getDeadsData());
+                handleScoreboardToggle(player, "deads", i18n.translate("command.deads_board"), dataManager.getDeadsData());
                 break;
             case "mobdie":
-                handleScoreboardToggle(player, "mobdie", "击杀榜", dataManager.getMobdieData());
+                handleScoreboardToggle(player, "mobdie", i18n.translate("command.mobdie_board"), dataManager.getMobdieData());
                 break;
             case "onlinetime":
-                handleScoreboardToggle(player, "onlinetime", "时长榜", dataManager.getOnlinetimeData());
+                handleScoreboardToggle(player, "onlinetime", i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData());
                 break;
             case "all":
                 displayAllRankings(player);
@@ -67,14 +70,14 @@ public class RankingCommand implements CommandExecutor {
                 if (args.length > 1) {
                     handleSingleRanking(player, args[1]);
                 } else {
-                    player.sendMessage("使用方法: /ranking list <ranking_name>");
+                    player.sendMessage(i18n.translate("command.usage_list"));
                 }
                 break;
             case "help":
                 displayHelpMessage(player);
                 break;
             default:
-                player.sendMessage("未知的子命令，请使用 /ranking help 查看帮助信息。");
+                player.sendMessage(i18n.translate("command.unknown_command"));
                 break;
         }
 
@@ -87,58 +90,58 @@ public class RankingCommand implements CommandExecutor {
 
         if (scoreboardStatus == 1) {
             clearScoreboard(player);
-            player.sendMessage(displayName + "已开启！");
+            player.sendMessage(displayName + i18n.translate("command.enabled"));
             pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
         } else {
-            player.sendMessage(displayName + "已关闭！");
+            player.sendMessage(displayName + i18n.translate("command.disabled"));
             clearScoreboard(player);
         }
     }
 
     private void displayAllRankings(Player player) {
-        player.sendMessage(ChatColor.GOLD + "所有排行榜数据：");
-        displayRankingData(player, "放置榜", dataManager.getPlaceData());
-        displayRankingData(player, "挖掘榜", dataManager.getDestroysData());
-        displayRankingData(player, "死亡榜", dataManager.getDeadsData());
-        displayRankingData(player, "击杀榜", dataManager.getMobdieData());
-        displayRankingData(player, "时长榜", dataManager.getOnlinetimeData());
+        player.sendMessage(ChatColor.GOLD + i18n.translate("command.all_rankings"));
+        displayRankingData(player, i18n.translate("command.place_board"), dataManager.getPlaceData());
+        displayRankingData(player, i18n.translate("command.destroys_board"), dataManager.getDestroysData());
+        displayRankingData(player, i18n.translate("command.deads_board"), dataManager.getDeadsData());
+        displayRankingData(player, i18n.translate("command.mobdie_board"), dataManager.getMobdieData());
+        displayRankingData(player, i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData());
     }
 
     private void displayPlayerRankings(Player player) {
         UUID uuid = player.getUniqueId();
-        player.sendMessage(ChatColor.GOLD + "你的所有排行榜数据：");
-        displayPlayerData(player, "放置榜", dataManager.getPlaceData(), uuid);
-        displayPlayerData(player, "挖掘榜", dataManager.getDestroysData(), uuid);
-        displayPlayerData(player, "死亡榜", dataManager.getDeadsData(), uuid);
-        displayPlayerData(player, "击杀榜", dataManager.getMobdieData(), uuid);
-        displayPlayerData(player, "时长榜", dataManager.getOnlinetimeData(), uuid);
+        player.sendMessage(ChatColor.GOLD + i18n.translate("command.your_rankings"));
+        displayPlayerData(player, i18n.translate("command.place_board"), dataManager.getPlaceData(), uuid);
+        displayPlayerData(player, i18n.translate("command.destroys_board"), dataManager.getDestroysData(), uuid);
+        displayPlayerData(player, i18n.translate("command.deads_board"), dataManager.getDeadsData(), uuid);
+        displayPlayerData(player, i18n.translate("command.mobdie_board"), dataManager.getMobdieData(), uuid);
+        displayPlayerData(player, i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData(), uuid);
     }
 
     private void handleSingleRanking(Player player, String rankingName) {
         switch (rankingName.toLowerCase()) {
             case "place":
-                displayRankingData(player, "放置榜", dataManager.getPlaceData());
+                displayRankingData(player, i18n.translate("command.place_board"), dataManager.getPlaceData());
                 break;
             case "destroys":
-                displayRankingData(player, "挖掘榜", dataManager.getDestroysData());
+                displayRankingData(player, i18n.translate("command.destroys_board"), dataManager.getDestroysData());
                 break;
             case "deads":
-                displayRankingData(player, "死亡榜", dataManager.getDeadsData());
+                displayRankingData(player, i18n.translate("command.deads_board"), dataManager.getDeadsData());
                 break;
             case "mobdie":
-                displayRankingData(player, "击杀榜", dataManager.getMobdieData());
+                displayRankingData(player, i18n.translate("command.mobdie_board"), dataManager.getMobdieData());
                 break;
             case "onlinetime":
-                displayRankingData(player, "时长榜", dataManager.getOnlinetimeData());
+                displayRankingData(player, i18n.translate("command.onlinetime_board"), dataManager.getOnlinetimeData());
                 break;
             default:
-                player.sendMessage("未知的排行榜名称，请使用 /ranking help 查看帮助信息。");
+                player.sendMessage(i18n.translate("command.unknown_ranking"));
                 break;
         }
     }
 
     private void displayRankingData(Player player, String title, Map<String, Long> data) {
-        player.sendMessage(ChatColor.GOLD + title + "：");
+        player.sendMessage(ChatColor.GOLD + title + i18n.translate("command.colon"));
         data.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .forEach(entry -> {
@@ -154,9 +157,9 @@ public class RankingCommand implements CommandExecutor {
     private void displayPlayerData(Player player, String title, Map<String, Long> data, UUID uuid) {
         Long value = data.get(uuid.toString());
         if (value != null) {
-            player.sendMessage(ChatColor.GOLD + title + "：" + ChatColor.GREEN + value);
+            player.sendMessage(ChatColor.GOLD + title + i18n.translate("command.colon") + ChatColor.GREEN + value);
         } else {
-            player.sendMessage(ChatColor.GOLD + title + "：无数据");
+            player.sendMessage(ChatColor.GOLD + title + i18n.translate("command.colon") + i18n.translate("command.no_data"));
         }
     }
 
@@ -208,7 +211,6 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void clearScoreboard(Player player) {
-        //Bukkit.getLogger().warning("Player player  " + player);
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         Scoreboard newScoreboard = scoreboardManager.getNewScoreboard();  // 创建新的空白记分板
         player.setScoreboard(newScoreboard);  // 将新的空白记分板设置给玩家
@@ -225,26 +227,26 @@ public class RankingCommand implements CommandExecutor {
         TextComponent message = new TextComponent("§9§l=== §b§l");
         TextComponent rankingLink = new TextComponent("[Ranking]");
         rankingLink.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://github.com/Chlna6666/Ranking"));
-        TextComponent helpMessage = new TextComponent(" §9§l帮助 §f§lby Chlna6666 §9§l===\n");
+        TextComponent helpMessage = new TextComponent(" §9§l" + i18n.translate("command.help") + " §f§lby Chlna6666 §9§l===\n");
 
         message.addExtra(rankingLink);
         message.addExtra(helpMessage);
 
-        TextComponent place = new TextComponent("§b/ranking place §f- §7查看放置榜\n");
+        TextComponent place = new TextComponent("§b/ranking place §f- §7" + i18n.translate("command.view_place_board") + "\n");
         place.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking place"));
-        TextComponent destroys = new TextComponent("§b/ranking destroys §f- §7查看挖掘榜\n");
+        TextComponent destroys = new TextComponent("§b/ranking destroys §f- §7" + i18n.translate("command.view_destroys_board") + "\n");
         destroys.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking destroys"));
-        TextComponent deads = new TextComponent("§b/ranking deads §f- §7查看死亡榜\n");
+        TextComponent deads = new TextComponent("§b/ranking deads §f- §7" + i18n.translate("command.view_deads_board") + "\n");
         deads.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking deads"));
-        TextComponent mobdie = new TextComponent("§b/ranking mobdie §f- §7查看击杀榜\n");
+        TextComponent mobdie = new TextComponent("§b/ranking mobdie §f- §7" + i18n.translate("command.view_mobdie_board") + "\n");
         mobdie.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking mobdie"));
-        TextComponent onlinetime = new TextComponent("§b/ranking onlinetime §f- §7查看在线时长榜\n");
+        TextComponent onlinetime = new TextComponent("§b/ranking onlinetime §f- §7" + i18n.translate("command.view_onlinetime_board") + "\n");
         onlinetime.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking onlinetime"));
-        TextComponent all = new TextComponent("§b/ranking all §f- §7查看所有排行榜\n");
+        TextComponent all = new TextComponent("§b/ranking all §f- §7" + i18n.translate("command.view_all_boards") + "\n");
         all.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking all"));
-        TextComponent my = new TextComponent("§b/ranking my §f- §7查看自己的所有排行榜数据\n");
+        TextComponent my = new TextComponent("§b/ranking my §f- §7" + i18n.translate("command.view_my_boards") + "\n");
         my.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking my"));
-        TextComponent list = new TextComponent("§b/ranking list <ranking_name> §f- §7查看指定排行榜数据\n");
+        TextComponent list = new TextComponent("§b/ranking list <ranking_name> §f- §7" + i18n.translate("command.view_specific_board") + "\n");
         list.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking list <ranking_name>"));
 
         player.spigot().sendMessage(message, place, destroys, deads, mobdie, onlinetime, all, my, list);

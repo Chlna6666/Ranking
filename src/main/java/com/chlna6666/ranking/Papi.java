@@ -1,5 +1,6 @@
 package com.chlna6666.ranking;
 
+import com.chlna6666.ranking.I18n.I18n;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -10,9 +11,11 @@ import java.util.*;
 
 public class Papi extends PlaceholderExpansion {
     private final DataManager dataManager;
+    private final I18n i18n;
 
-    public Papi(Ranking pluginInstance, DataManager dataManager) {
+    public Papi(Ranking pluginInstance, DataManager dataManager, I18n i18n) {
         this.dataManager = dataManager;
+        this.i18n = i18n;
     }
 
     @Override
@@ -103,7 +106,7 @@ public class Papi extends PlaceholderExpansion {
                         String playerName = targetPlayer.getName();
                         String countStr = String.valueOf(count);
                         if (targetPlayer.equals(currentPlayer)) {
-                            countStr += " (我)";
+                            countStr += " " + i18n.translate("papi.me");
                         }
                         return playerName + ": " + countStr;
                     }
