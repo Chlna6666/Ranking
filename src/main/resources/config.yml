@@ -11,7 +11,7 @@ update_checker:
   enabled: true   # 是否启用更新检查器
   notify_on_login: true   # 管理员登录时是否提醒更新
 
-# 排行榜开关设置
+# 排行榜开关设置(todo 暂时不支持)
 leaderboards:
   place: true   # 是否启用放置榜
   destroys: true   # 是否启用挖掘榜
