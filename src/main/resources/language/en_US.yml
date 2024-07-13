@@ -6,6 +6,7 @@ update_checker:
   new_version_found: "New version found"
   download_link: "Download link"
   error_checking_updates: "Error checking for updates"
+  update_checker: "Update Checker: "
 papi:
   me: "(me)"
 command:
@@ -26,6 +27,7 @@ command:
   view_deads_board: "View Deads Board"
   view_mobdie_board: "View Mob Die Board"
   view_onlinetime_board: "View Online Time Board"
+  view_break_bedrock_board: "View Break Bedrock Board"
   view_all_boards: "View all rankings"
   view_my_boards: "View your rankings"
   view_specific_board: "View specific ranking"
@@ -35,3 +37,6 @@ sidebar:
   death: "Deads"
   kill: "Mob Die"
   online_time: "Online Time"
+  break_bedrock: "Break Bedrock"
+warning:
+  cannot_get_main_command: "Unable to obtain /ranking main command!"

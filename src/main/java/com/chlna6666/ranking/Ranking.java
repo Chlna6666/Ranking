@@ -3,15 +3,23 @@ package com.chlna6666.ranking;
 import com.chlna6666.ranking.I18n.I18n;
 import com.chlna6666.ranking.updatechecker.UpdateChecker;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Directional;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -33,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+
 public class Ranking extends JavaPlugin implements Listener {
 
     private ConfigManager configManager;
@@ -41,6 +50,7 @@ public class Ranking extends JavaPlugin implements Listener {
     private UpdateChecker updateChecker;
 
     private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
+    private final Map<World, Map<Location, Player>> pistonCache = new HashMap<>();
 
     private long SAVE_DELAY_TICKS;
     private long REGULAR_SAVE_INTERVAL_TICKS;
@@ -74,7 +84,6 @@ public class Ranking extends JavaPlugin implements Listener {
             new Papi(this, dataManager, i18n).register();
         }
 
-
         loadConfigValues();
         startRegularSaveTask();
 
@@ -92,7 +101,6 @@ public class Ranking extends JavaPlugin implements Listener {
         SAVE_DELAY_TICKS = config.getLong("data_storage.save_delay");
         REGULAR_SAVE_INTERVAL_TICKS = config.getLong("data_storage.regular_save_interval");
     }
-
 
     private void logPluginInfo() {
         Bukkit.getLogger().info("");
@@ -118,13 +126,53 @@ public class Ranking extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        handleEvent(event.getPlayer(), "place", dataManager.getPlaceData(), dataManager.getPlaceFile(), i18n.translate("sidebar.place"));
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+
+        handleEvent(player, "place", dataManager.getPlaceData(), dataManager.getPlaceFile(), i18n.translate("sidebar.place"));
+
+        // 记录放置的活塞及其方向
+        if (block.getType() == Material.PISTON || block.getType() == Material.STICKY_PISTON) {
+            Directional directional = (Directional) block.getBlockData();
+            BlockFace pistonFacing = directional.getFacing();
+            Location bedrockPos = block.getRelative(pistonFacing).getLocation();
+            if (block.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
+                pistonCache.computeIfAbsent(block.getWorld(), k -> new HashMap<>()).put(bedrockPos, player);
+                getLogger().info("活塞由 " + player.getName() + " 放置，朝向基岩，位置：" + bedrockPos);
+            }
+        }
     }
 
     @EventHandler
-    public void onBreak(BlockBreakEvent event) {
-        handleEvent(event.getPlayer(), "destroys", dataManager.getDestroysData(), dataManager.getDestroysFile(), i18n.translate("sidebar.break"));
+    public void onBlockPistonRetract(BlockPistonRetractEvent event) {
+        Block piston = event.getBlock();
+        Directional directional = (Directional) piston.getBlockData();
+        BlockFace pistonFacing = directional.getFacing();
+        Location bedrockPos = piston.getRelative(pistonFacing).getLocation();
+
+        // 检查基岩是否消失
+        World world = piston.getWorld();
+        Map<Location, Player> map = pistonCache.get(world);
+        if(map != null){
+        if (piston.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
+                Player player = map.remove(bedrockPos);
+                if (player != null) {
+                    handleEvent(player, "破坏基岩");
+                    handleEvent(player, "break_bedrock", dataManager.getBreakBedrockData(), dataManager.getBreakBedrockFile(), i18n.translate("sidebar.break_bedrock"));
+                    getLogger().info("基岩被活塞收缩事件破坏，由 " + player.getName() + " 触发，位置：" + bedrockPos);
+                }
+        }
+        }
     }
+
+
+    private void handleEvent(Player player, String eventType) {
+        // 处理破坏基岩的事件逻辑
+        player.sendMessage("你破坏了基岩！");
+        getLogger().info("处理事件，玩家：" + player.getName() + "，事件类型：" + eventType);
+    }
+
+
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
@@ -187,6 +235,7 @@ public class Ranking extends JavaPlugin implements Listener {
         checkAndUpdateScoreboard(player, playerData, "deads", i18n.translate("sidebar.death"), dataManager.getDeadsData());
         checkAndUpdateScoreboard(player, playerData, "mobdie", i18n.translate("sidebar.kill"), dataManager.getMobdieData());
         checkAndUpdateScoreboard(player, playerData, "onlinetime", i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
+        checkAndUpdateScoreboard(player, playerData, "break_bedrock", i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
     }
 
     private void checkAndUpdateScoreboard(Player player, JSONObject playerData, String dataType, String sidebarTitle, Map<String, Long> data) {
@@ -289,14 +338,11 @@ public class Ranking extends JavaPlugin implements Listener {
         }
     }
 
-
-
     private void clearPlayerRankingObjective(Player player) {
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         Scoreboard newScoreboard = scoreboardManager.getNewScoreboard();  // 创建新的空白记分板
         player.setScoreboard(newScoreboard);  // 将新的空白记分板设置给玩家
     }
-
 
     public long getSaveDelayTicks() {
         return SAVE_DELAY_TICKS;

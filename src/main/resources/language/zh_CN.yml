@@ -6,6 +6,7 @@ update_checker:
   new_version_found: "发现新版本"
   download_link: "下载链接"
   error_checking_updates: "检查更新时出错"
+  update_checker: "更新检查器: "
 papi:
   me: "(我)"
 command:
@@ -26,6 +27,7 @@ command:
   view_deads_board: "查看死亡榜"
   view_mobdie_board: "查看击杀榜"
   view_onlinetime_board: "查看在线时长榜"
+  view_break_bedrock_board: "查看破基岩榜"
   view_all_boards: "查看所有排行榜"
   view_my_boards: "查看自己的所有排行榜数据"
   view_specific_board: "查看指定排行榜数据"
@@ -35,5 +37,6 @@ sidebar:
   death: "死亡榜"
   kill: "击杀榜"
   online_time: "在线时长榜"
+  break_bedrock: "破基岩榜"
 warning:
   cannot_get_main_command: "无法获取 /ranking 主命令！"

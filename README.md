@@ -14,22 +14,33 @@
 
 ```yaml
 # 排行榜插件配置文件
-
 # 选择语言
-language: zh_CN  # 可选值: en_US (英文), zh_CN (简体中文)
+language: zh_CN  # 可选值: en_US (English), zh_CN (简体中文) ./Ranking/language/ 可以放入其他语言包使用
 
-# 排行榜开关设置
+# bStats 开关
+bstats:
+  enabled: true  # 是否启用 bStats 统计
+
+# 更新检查器设置
+update_checker:
+  enabled: true   # 是否启用更新检查器
+  notify_on_login: true   # 管理员登录时是否提醒更新
+
+# 排行榜开关设置(todo 暂时不支持)
 leaderboards:
-  place: true   # 启用放置排行榜
-  destroys: true   # 启用破坏排行榜
-  deads: true   # 启用死亡排行榜
-  mobdie: true   # 启用击杀排行榜
-  onlinetime: true   # 启用在线时长排行榜
+  place: true   # 是否启用放置榜
+  destroys: true   # 是否启用挖掘榜
+  deads: true   # 是否启用死亡榜
+  mobdie: true   # 是否启用击杀榜
+  onlinetime: true   # 是否启用在线时长榜
 
 # 数据存储方式设置
 data_storage:
-  method: json   # 数据存储方式，可选值: json (JSON 文件), db (数据库), mysql (MySQL 数据库)
+  method: json   # 数据存储方式，可选值: json (JSON 文件)
   location: /plugins/Ranking/data   # 数据存储位置，仅在选择 json 存储方式时有效
+  save_delay: 100  # 保存延迟，单位为ticks (1 tick = 50 ms)
+  regular_save_interval: 1200  # 定期保存间隔，单位为ticks (1 tick = 50 ms)
+
 ```
 
 ## 使用方法

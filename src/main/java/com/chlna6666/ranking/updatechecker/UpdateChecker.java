@@ -5,16 +5,17 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import javax.net.ssl.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 
 public class UpdateChecker {
     private final JavaPlugin plugin;
@@ -101,7 +102,7 @@ public class UpdateChecker {
 
     private void logWarning(String message) {
         if (!warningSent) {
-            Bukkit.getLogger().warning("更新检查器: " + message);
+            Bukkit.getLogger().warning(((Ranking) plugin).getI18n().translate("update_checker.update_checker") + message);
             warningSent = true;
             // 在一分钟后重置标志位
             Bukkit.getScheduler().runTaskLater(plugin, () -> warningSent = false, 1200L); // 1200 ticks = 1 minute

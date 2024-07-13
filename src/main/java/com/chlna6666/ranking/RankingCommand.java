@@ -60,6 +60,9 @@ public class RankingCommand implements CommandExecutor {
             case "onlinetime":
                 handleScoreboardToggle(player, "onlinetime", i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
                 break;
+            case "break_bedrock":
+                handleScoreboardToggle(player, "break_bedrock", i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
+                break;
             case "all":
                 displayAllRankings(player);
                 break;
@@ -105,6 +108,7 @@ public class RankingCommand implements CommandExecutor {
         displayRankingData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData());
         displayRankingData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData());
         displayRankingData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
+        displayRankingData(player, i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
     }
 
     private void displayPlayerRankings(Player player) {
@@ -115,6 +119,7 @@ public class RankingCommand implements CommandExecutor {
         displayPlayerData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData(), uuid);
         displayPlayerData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData(), uuid);
         displayPlayerData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData(), uuid);
+        displayPlayerData(player, i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData(), uuid);
     }
 
     private void handleSingleRanking(Player player, String rankingName) {
@@ -133,6 +138,9 @@ public class RankingCommand implements CommandExecutor {
                 break;
             case "onlinetime":
                 displayRankingData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
+                break;
+            case "break_bedrock":
+                displayRankingData(player, i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
                 break;
             default:
                 player.sendMessage(i18n.translate("command.unknown_ranking"));
@@ -164,7 +172,7 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void updateScoreboardStatus(Player player, String rankingValue) {
-        List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime");
+        List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock");
 
         UUID uuid = player.getUniqueId();
         JSONObject playersData = dataManager.getPlayersData();
@@ -242,6 +250,8 @@ public class RankingCommand implements CommandExecutor {
         mobdie.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking mobdie"));
         TextComponent onlinetime = new TextComponent("§b/ranking onlinetime §f- §7" + i18n.translate("command.view_onlinetime_board") + "\n");
         onlinetime.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking onlinetime"));
+        TextComponent breakBedrock = new TextComponent("§b/ranking break_bedrock §f- §7" + i18n.translate("command.view_break_bedrock_board") + "\n");
+        breakBedrock.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranki"));
         TextComponent all = new TextComponent("§b/ranking all §f- §7" + i18n.translate("command.view_all_boards") + "\n");
         all.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking all"));
         TextComponent my = new TextComponent("§b/ranking my §f- §7" + i18n.translate("command.view_my_boards") + "\n");
@@ -249,6 +259,6 @@ public class RankingCommand implements CommandExecutor {
         TextComponent list = new TextComponent("§b/ranking list <ranking_name> §f- §7" + i18n.translate("command.view_specific_board") + "\n");
         list.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ranking list <ranking_name>"));
 
-        player.spigot().sendMessage(message, place, destroys, deads, mobdie, onlinetime, all, my, list);
+        player.spigot().sendMessage(message, place, destroys, deads, mobdie, onlinetime, breakBedrock, all, my, list);
     }
 }

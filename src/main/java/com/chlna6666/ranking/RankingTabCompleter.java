@@ -19,6 +19,7 @@ public class RankingTabCompleter implements TabCompleter {
             subCommands.add("deads");
             subCommands.add("mobdie");
             subCommands.add("onlinetime");
+            subCommands.add("break_bedrock");
             subCommands.add("all");
             subCommands.add("my");
             subCommands.add("list");

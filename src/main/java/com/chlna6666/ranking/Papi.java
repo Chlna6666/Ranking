@@ -56,6 +56,8 @@ public class Papi extends PlaceholderExpansion {
                 return getPlayerCount(player, dataManager.getMobdieData());
             case "onlinetime":
                 return getPlayerCount(player, dataManager.getOnlinetimeData());
+            case "break_bedrock":
+                return getPlayerCount(player, dataManager.getBreakBedrockData());
             default:
                 if (params.startsWith("place_")) {
                     return getRankingEntry(player, params, dataManager.getPlaceData());
@@ -67,7 +69,10 @@ public class Papi extends PlaceholderExpansion {
                     return getRankingEntry(player, params, dataManager.getMobdieData());
                 } else if (params.startsWith("onlinetime_")) {
                     return getRankingEntry(player, params, dataManager.getOnlinetimeData());
-                }
+                } else if (params.startsWith("break_bedrock_")) {
+                 return getRankingEntry(player, params, dataManager.getOnlinetimeData());
+        }
+
                 return null;
         }
     }

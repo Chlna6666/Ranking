@@ -35,6 +35,10 @@ commands:
         description: 开启和关闭排名显示
         usage: /ranking onlinetime
         permission: ''
+      break_bedrock:
+        description: 开启和关闭排名显示
+        usage: /ranking break_bedrock
+        permission: ''
       all:
         description: 输出所有排行榜的全部数据
         usage: /ranking all

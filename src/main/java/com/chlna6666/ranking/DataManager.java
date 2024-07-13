@@ -17,12 +17,14 @@ public class DataManager {
     private JSONObject deadsData;
     private JSONObject mobdieData;
     private JSONObject onlinetimeData;
+    private JSONObject breakBedrockData; // 破基岩榜数据
     private File dataFile;
     private File placeFile;
     private File destroysFile;
     private File deadsFile;
     private File mobdieFile;
     private File onlinetimeFile;
+    private File breakBedrockFile; // 破基岩榜文件
 
     public DataManager(Ranking plugin) {
         this.plugin = plugin;
@@ -44,6 +46,7 @@ public class DataManager {
         deadsFile = new File(dataFolder, "deads.json");
         mobdieFile = new File(dataFolder, "mobdie.json");
         onlinetimeFile = new File(dataFolder, "onlinetime.json");
+        breakBedrockFile = new File(dataFolder, "break_bedrock.json"); // 初始化破基岩榜文件
 
         playersData = initializeAndLoadJSON(dataFile);
         placeData = initializeAndLoadJSON(placeFile);
@@ -51,6 +54,7 @@ public class DataManager {
         deadsData = initializeAndLoadJSON(deadsFile);
         mobdieData = initializeAndLoadJSON(mobdieFile);
         onlinetimeData = initializeAndLoadJSON(onlinetimeFile);
+        breakBedrockData = initializeAndLoadJSON(breakBedrockFile); // 初始化破基岩榜数据
     }
 
     private JSONObject initializeAndLoadJSON(File file) {
@@ -102,6 +106,7 @@ public class DataManager {
         saveJSON(deadsData, deadsFile);
         saveJSON(mobdieData, mobdieFile);
         saveJSON(onlinetimeData, onlinetimeFile);
+        saveJSON(breakBedrockData, breakBedrockFile); // 保存破基岩榜数据
     }
 
     public void startSaveTask(AtomicBoolean taskRunning, Runnable task) {
@@ -137,6 +142,10 @@ public class DataManager {
         return onlinetimeData;
     }
 
+    public JSONObject getBreakBedrockData() { // 获取破基岩榜数据
+        return breakBedrockData;
+    }
+
     public File getDataFile() {
         return dataFile;
     }
@@ -159,5 +168,9 @@ public class DataManager {
 
     public File getOnlinetimeFile() {
         return onlinetimeFile;
+    }
+
+    public File getBreakBedrockFile() { // 获取破基岩榜文件
+        return breakBedrockFile;
     }
 }
