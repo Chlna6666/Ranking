@@ -1,12 +1,16 @@
 i18n:
   loaded_language: "Language file loaded: "
 update_checker:
-  connection_failed: "Failed to connect to the update server. Response code: {code}"
+  connection_failed: "Connection to update server failed. Response code: {code}"
   connection_reset: "Connection reset. Please check your network connection."
   new_version_found: "New version found"
   download_link: "Download link"
   error_checking_updates: "Error checking for updates"
+  latest_version_installed: "You are using the latest version."
+  beta_version_installed: "You are using a beta version"
+  backup_warning: "Please ensure you have backed up your data."
   update_checker: "Update Checker: "
+
 papi:
   me: "(me)"
 command:

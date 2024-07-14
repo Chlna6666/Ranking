@@ -62,23 +62,41 @@ public class UpdateChecker {
                 latestVersion = (String) data.get("version");
                 viewUrl = (String) data.get("view_url");
 
-                if (isVersionHigher(latestVersion, plugin.getDescription().getVersion())) {
-                    String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
-                            ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        if (sender != null) {
-                            sender.sendMessage(message);
-                        } else {
-                            Bukkit.getConsoleSender().sendMessage(message);
-                        }
-                    });
-                }
+                Bukkit.getScheduler().runTask(plugin, () -> handleUpdateCheckResult(sender));
             } catch (SocketException e) {
                 logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
             } catch (Exception e) {
-                plugin.getLogger().severe(  ((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
+                plugin.getLogger().severe(((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
             }
         });
+    }
+
+    private void handleUpdateCheckResult(CommandSender sender) {
+        String currentVersion = plugin.getDescription().getVersion();
+        if (isVersionHigher(latestVersion, currentVersion)) {
+            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
+                    ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
+            if (sender != null) {
+                sender.sendMessage(message);
+            } else {
+                Bukkit.getConsoleSender().sendMessage(message);
+            }
+        } else if (latestVersion.equals(currentVersion)) {
+            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.latest_version_installed");
+            if (sender != null) {
+                sender.sendMessage(message);
+            } else {
+                Bukkit.getConsoleSender().sendMessage(message);
+            }
+        } else {
+            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.RED + ((Ranking) plugin).getI18n().translate("update_checker.beta_version_installed") + ": " + plugin.getDescription().getVersion() +
+                    ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.backup_warning");
+            if (sender != null) {
+                sender.sendMessage(message);
+            } else {
+                Bukkit.getConsoleSender().sendMessage(message);
+            }
+        }
     }
 
     private boolean isVersionHigher(String remoteVersion, String currentVersion) {
@@ -98,7 +116,6 @@ public class UpdateChecker {
         }
         return false;
     }
-
 
     private void logWarning(String message) {
         if (!warningSent) {

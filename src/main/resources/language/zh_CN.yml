@@ -6,7 +6,11 @@ update_checker:
   new_version_found: "发现新版本"
   download_link: "下载链接"
   error_checking_updates: "检查更新时出错"
-  update_checker: "更新检查器: "
+  latest_version_installed: "您使用的是最新版本。"
+  beta_version_installed: "您使用的是测试版本"
+  backup_warning: "请确保您已经备份了数据。"
+  update_checker: "更新检查: "
+
 papi:
   me: "(我)"
 command:
