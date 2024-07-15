@@ -83,9 +83,7 @@ public class UpdateChecker {
             }
         } else if (latestVersion.equals(currentVersion)) {
             String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.latest_version_installed");
-            if (sender != null) {
-                sender.sendMessage(message);
-            } else {
+            if (sender == null) {
                 Bukkit.getConsoleSender().sendMessage(message);
             }
         } else {
