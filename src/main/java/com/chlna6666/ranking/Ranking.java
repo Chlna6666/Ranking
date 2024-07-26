@@ -2,6 +2,7 @@ package com.chlna6666.ranking;
 
 import com.chlna6666.ranking.I18n.I18n;
 import com.chlna6666.ranking.updatechecker.UpdateChecker;
+import com.chlna6666.ranking.LeaderboardSettings;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -47,6 +48,7 @@ public class Ranking extends JavaPlugin implements Listener {
     private ConfigManager configManager;
     private I18n i18n;
     private DataManager dataManager;
+    private LeaderboardSettings leaderboardSettings;
     private UpdateChecker updateChecker;
 
     private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
@@ -66,6 +68,8 @@ public class Ranking extends JavaPlugin implements Listener {
 
         configManager = new ConfigManager(this);
         dataManager = new DataManager(this);
+        leaderboardSettings = LeaderboardSettings.getInstance();
+        leaderboardSettings.loadSettings(configManager);
         logPluginInfo();
 
         i18n = new I18n(this);
@@ -129,60 +133,61 @@ public class Ranking extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
 
-        handleEvent(player, "place", dataManager.getPlaceData(), dataManager.getPlaceFile(), i18n.translate("sidebar.place"));
+        if (leaderboardSettings.isLeaderboardEnabled("place")) {
+            handleEvent(player, "place", dataManager.getPlaceData(), dataManager.getPlaceFile(), i18n.translate("sidebar.place"));
+        }
 
-        // 记录放置的活塞及其方向
-        if (block.getType() == Material.PISTON || block.getType() == Material.STICKY_PISTON) {
-            Directional directional = (Directional) block.getBlockData();
-            BlockFace pistonFacing = directional.getFacing();
-            Location bedrockPos = block.getRelative(pistonFacing).getLocation();
-            if (block.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
-                pistonCache.computeIfAbsent(block.getWorld(), k -> new HashMap<>()).put(bedrockPos, player);
-                getLogger().info("活塞由 " + player.getName() + " 放置，朝向基岩，位置：" + bedrockPos);
+        if (leaderboardSettings.isLeaderboardEnabled("break_bedrock")) {
+            // 记录放置的活塞及其方向
+            if (block.getType() == Material.PISTON || block.getType() == Material.STICKY_PISTON) {
+                Directional directional = (Directional) block.getBlockData();
+                BlockFace pistonFacing = directional.getFacing();
+                Location bedrockPos = block.getRelative(pistonFacing).getLocation();
+                if (block.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
+                    pistonCache.computeIfAbsent(block.getWorld(), k -> new HashMap<>()).put(bedrockPos, player);
+                    //getLogger().info("活塞由 " + player.getName() + " 放置，朝向基岩，位置：" + bedrockPos);
+                }
             }
         }
     }
 
     @EventHandler
     public void onBlockPistonRetract(BlockPistonRetractEvent event) {
-        Block piston = event.getBlock();
-        Directional directional = (Directional) piston.getBlockData();
-        BlockFace pistonFacing = directional.getFacing();
-        Location bedrockPos = piston.getRelative(pistonFacing).getLocation();
+        if (leaderboardSettings.isLeaderboardEnabled("break_bedrock")) {
+            Block piston = event.getBlock();
+            Directional directional = (Directional) piston.getBlockData();
+            BlockFace pistonFacing = directional.getFacing();
+            Location bedrockPos = piston.getRelative(pistonFacing).getLocation();
 
-        // 检查基岩是否消失
-        World world = piston.getWorld();
-        Map<Location, Player> map = pistonCache.get(world);
-        if(map != null){
-        if (piston.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
-                Player player = map.remove(bedrockPos);
-                if (player != null) {
-                    handleEvent(player, "破坏基岩");
-                    handleEvent(player, "break_bedrock", dataManager.getBreakBedrockData(), dataManager.getBreakBedrockFile(), i18n.translate("sidebar.break_bedrock"));
-                    getLogger().info("基岩被活塞收缩事件破坏，由 " + player.getName() + " 触发，位置：" + bedrockPos);
+            // 检查基岩是否消失
+            World world = piston.getWorld();
+            Map<Location, Player> map = pistonCache.get(world);
+            if (map != null) {
+                if (piston.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
+                    Player player = map.remove(bedrockPos);
+                    if (player != null) {
+                        handleEvent(player, "break_bedrock", dataManager.getBreakBedrockData(), dataManager.getBreakBedrockFile(), i18n.translate("sidebar.break_bedrock"));
+                        //getLogger().info("基岩被活塞收缩事件破坏，由 " + player.getName() + " 触发，位置：" + bedrockPos);
+                    }
                 }
-        }
+            }
         }
     }
-
-
-    private void handleEvent(Player player, String eventType) {
-        // 处理破坏基岩的事件逻辑
-        player.sendMessage("你破坏了基岩！");
-        getLogger().info("处理事件，玩家：" + player.getName() + "，事件类型：" + eventType);
-    }
-
 
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        handleEvent(event.getEntity(), "deads", dataManager.getDeadsData(), dataManager.getDeadsFile(), i18n.translate("sidebar.death"));
+        if (leaderboardSettings.isLeaderboardEnabled("deads")) {
+            handleEvent(event.getEntity(), "deads", dataManager.getDeadsData(), dataManager.getDeadsFile(), i18n.translate("sidebar.death"));
+        }
     }
 
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
-        if (event.getEntity().getKiller() != null) {
-            handleEvent(event.getEntity().getKiller().getPlayer(), "mobdie", dataManager.getMobdieData(), dataManager.getMobdieFile(), i18n.translate("sidebar.kill"));
+        if (leaderboardSettings.isLeaderboardEnabled("mobdie")) {
+            if (event.getEntity().getKiller() != null) {
+                handleEvent(event.getEntity().getKiller().getPlayer(), "mobdie", dataManager.getMobdieData(), dataManager.getMobdieFile(), i18n.translate("sidebar.kill"));
+            }
         }
     }
 
@@ -223,9 +228,11 @@ public class Ranking extends JavaPlugin implements Listener {
         clearPlayerRankingObjective(player);
         updatePlayerScoreboards(player, uuid);
 
-        BukkitRunnable timer = createOnlineTimeTimer(player, uuid);
-        onlineTimers.put(uuid, timer);
-        timer.runTaskTimer(this, 1200, 1200);
+        if (leaderboardSettings.isLeaderboardEnabled("onlinetime")) {
+            BukkitRunnable timer = createOnlineTimeTimer(player, uuid);
+            onlineTimers.put(uuid, timer);
+            timer.runTaskTimer(this, 1200, 1200);
+        }
     }
 
     private void updatePlayerScoreboards(Player player, UUID uuid) {

@@ -67,4 +67,9 @@ public class ConfigManager {
     public FileConfiguration getConfig() {
         return config;
     }
+
+    // 获取排行榜开关数据
+    public boolean isLeaderboardEnabled(String leaderboard) {
+        return config.getBoolean("leaderboards." + leaderboard, false);
+    }
 }

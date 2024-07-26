@@ -5,31 +5,35 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class RankingTabCompleter implements TabCompleter {
 
+    private final LeaderboardSettings leaderboardSettings;
+
+    public RankingTabCompleter() {
+        this.leaderboardSettings = LeaderboardSettings.getInstance();
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> subCommands = new ArrayList<>();
+        List<String> leaderboardCommands = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock");
 
         if (args.length == 1) {
-            subCommands.add("place");
-            subCommands.add("destroys");
-            subCommands.add("deads");
-            subCommands.add("mobdie");
-            subCommands.add("onlinetime");
-            subCommands.add("break_bedrock");
-            subCommands.add("all");
-            subCommands.add("my");
-            subCommands.add("list");
-            subCommands.add("help");
+            for (String cmd : leaderboardCommands) {
+                if (leaderboardSettings.isLeaderboardEnabled(cmd)) {
+                    subCommands.add(cmd);
+                }
+            }
+            subCommands.addAll(Arrays.asList("all", "my", "list", "help"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
-            subCommands.add("place");
-            subCommands.add("destroys");
-            subCommands.add("deads");
-            subCommands.add("mobdie");
-            subCommands.add("onlinetime");
+            for (String cmd : leaderboardCommands) {
+                if (leaderboardSettings.isLeaderboardEnabled(cmd)) {
+                    subCommands.add(cmd);
+                }
+            }
         }
 
         return subCommands;

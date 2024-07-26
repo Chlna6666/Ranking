@@ -23,11 +23,13 @@ public class RankingCommand implements CommandExecutor {
     private final Ranking pluginInstance;
     private final DataManager dataManager;
     private final I18n i18n;
+    private final LeaderboardSettings leaderboardSettings;
 
     public RankingCommand(Ranking pluginInstance, DataManager dataManager, I18n i18n) {
         this.pluginInstance = pluginInstance;
         this.dataManager = dataManager;
         this.i18n = i18n;
+        this.leaderboardSettings = LeaderboardSettings.getInstance();
     }
 
     @Override
@@ -44,6 +46,36 @@ public class RankingCommand implements CommandExecutor {
             return true;
         }
 
+        if (leaderboardSettings.isLeaderboardEnabled(args[0].toLowerCase())) {
+            handleLeaderboardCommand(player, args);
+        } else {
+            switch (args[0].toLowerCase()) {
+                case "all":
+                    displayAllRankings(player);
+                    break;
+                case "my":
+                    displayPlayerRankings(player);
+                    break;
+                case "list":
+                    if (args.length > 1) {
+                        handleSingleRanking(player, args[1]);
+                    } else {
+                        player.sendMessage(i18n.translate("command.usage_list"));
+                    }
+                    break;
+                case "help":
+                    displayHelpMessage(player);
+                    break;
+                default:
+                    player.sendMessage(i18n.translate("command.unknown_command"));
+                    break;
+            }
+        }
+
+        return true;
+    }
+
+    private void handleLeaderboardCommand(Player player, String[] args) {
         switch (args[0].toLowerCase()) {
             case "place":
                 handleScoreboardToggle(player, "place", i18n.translate("sidebar.place"), dataManager.getPlaceData());
@@ -63,28 +95,10 @@ public class RankingCommand implements CommandExecutor {
             case "break_bedrock":
                 handleScoreboardToggle(player, "break_bedrock", i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
                 break;
-            case "all":
-                displayAllRankings(player);
-                break;
-            case "my":
-                displayPlayerRankings(player);
-                break;
-            case "list":
-                if (args.length > 1) {
-                    handleSingleRanking(player, args[1]);
-                } else {
-                    player.sendMessage(i18n.translate("command.usage_list"));
-                }
-                break;
-            case "help":
-                displayHelpMessage(player);
-                break;
             default:
-                player.sendMessage(i18n.translate("command.unknown_command"));
+                player.sendMessage(i18n.translate("command.unknown_ranking"));
                 break;
         }
-
-        return true;
     }
 
     private void handleScoreboardToggle(Player player, String rankingName, String displayName, Map<String, Long> rankingData) {
@@ -123,28 +137,32 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void handleSingleRanking(Player player, String rankingName) {
-        switch (rankingName.toLowerCase()) {
-            case "place":
-                displayRankingData(player, i18n.translate("sidebar.place"), dataManager.getPlaceData());
-                break;
-            case "destroys":
-                displayRankingData(player, i18n.translate("sidebar.break"), dataManager.getDestroysData());
-                break;
-            case "deads":
-                displayRankingData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData());
-                break;
-            case "mobdie":
-                displayRankingData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData());
-                break;
-            case "onlinetime":
-                displayRankingData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
-                break;
-            case "break_bedrock":
-                displayRankingData(player, i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
-                break;
-            default:
-                player.sendMessage(i18n.translate("command.unknown_ranking"));
-                break;
+        if (leaderboardSettings.isLeaderboardEnabled(rankingName.toLowerCase())) {
+            switch (rankingName.toLowerCase()) {
+                case "place":
+                    displayRankingData(player, i18n.translate("sidebar.place"), dataManager.getPlaceData());
+                    break;
+                case "destroys":
+                    displayRankingData(player, i18n.translate("sidebar.break"), dataManager.getDestroysData());
+                    break;
+                case "deads":
+                    displayRankingData(player, i18n.translate("sidebar.death"), dataManager.getDeadsData());
+                    break;
+                case "mobdie":
+                    displayRankingData(player, i18n.translate("sidebar.kill"), dataManager.getMobdieData());
+                    break;
+                case "onlinetime":
+                    displayRankingData(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
+                    break;
+                case "break_bedrock":
+                    displayRankingData(player, i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
+                    break;
+                default:
+                    player.sendMessage(i18n.translate("command.unknown_ranking"));
+                    break;
+            }
+        } else {
+            player.sendMessage(i18n.translate("command.unknown_ranking"));
         }
     }
 
@@ -223,11 +241,9 @@ public class RankingCommand implements CommandExecutor {
         Scoreboard newScoreboard = scoreboardManager.getNewScoreboard();  // 创建新的空白记分板
         player.setScoreboard(newScoreboard);  // 将新的空白记分板设置给玩家
         Scoreboard scoreboard = player.getScoreboard();
-        if (scoreboard != null) {
-            Objective objective = scoreboard.getObjective(DisplaySlot.SIDEBAR);
-            if (objective != null) {
-                objective.unregister();
-            }
+        Objective objective = scoreboard.getObjective(DisplaySlot.SIDEBAR);
+        if (objective != null) {
+            objective.unregister();
         }
     }
 

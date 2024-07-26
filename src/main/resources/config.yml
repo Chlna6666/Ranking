@@ -11,13 +11,14 @@ update_checker:
   enabled: true   # 是否启用更新检查器
   notify_on_login: true   # 管理员登录时是否提醒更新
 
-# 排行榜开关设置(todo 暂时不支持)
+# 排行榜开关设置
 leaderboards:
   place: true   # 是否启用放置榜
   destroys: true   # 是否启用挖掘榜
   deads: true   # 是否启用死亡榜
   mobdie: true   # 是否启用击杀榜
   onlinetime: true   # 是否启用在线时长榜
+  break_bedrock: true
 
 # 数据存储方式设置
 data_storage:
