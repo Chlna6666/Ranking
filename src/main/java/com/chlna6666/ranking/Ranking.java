@@ -174,6 +174,12 @@ public class Ranking extends JavaPlugin implements Listener {
         }
     }
 
+    @EventHandler
+    public void onBreak(BlockBreakEvent event) {
+        if (leaderboardSettings.isLeaderboardEnabled("deads")) {
+            handleEvent(event.getPlayer(), "destroys", dataManager.getDeadsData(), dataManager.getDeadsFile(), i18n.translate("sidebar.break"));
+        }
+    }
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
