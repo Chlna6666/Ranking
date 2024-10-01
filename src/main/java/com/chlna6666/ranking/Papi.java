@@ -1,15 +1,15 @@
 package com.chlna6666.ranking;
 
 import com.chlna6666.ranking.I18n.I18n;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
-import org.json.simple.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+
 
 public class Papi extends PlaceholderExpansion {
     private final DataManager dataManager;
@@ -21,17 +21,17 @@ public class Papi extends PlaceholderExpansion {
     }
 
     @Override
-    public String getAuthor() {
+    public @NotNull String getAuthor() {
         return "Chlna6666";
     }
 
     @Override
-    public String getIdentifier() {
+    public @NotNull String getIdentifier() {
         return "ranking";
     }
 
     @Override
-    public String getVersion() {
+    public @NotNull String getVersion() {
         return "1.0.0";
     }
 
@@ -83,18 +83,17 @@ public class Papi extends PlaceholderExpansion {
         }
     }
 
-    private String getPlayerCount(OfflinePlayer player, JSONObject jsonData) {
+    private String getPlayerCount(OfflinePlayer player, ObjectNode jsonData) {
         if (jsonData != null && player != null) {
             String playerUUID = player.getUniqueId().toString();
-            Object playerCount = jsonData.get(playerUUID);
-            if (playerCount != null) {
-                return String.valueOf(playerCount);
+            if (jsonData.has(playerUUID)) {
+                return jsonData.get(playerUUID).asText();
             }
         }
         return null;
     }
 
-    private String getRankingEntryAsync(OfflinePlayer player, String params, JSONObject jsonData) {
+    private String getRankingEntryAsync(OfflinePlayer player, String params, ObjectNode jsonData) {
         CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
             return getRankingEntry(player, params, jsonData);
         });
@@ -107,22 +106,21 @@ public class Papi extends PlaceholderExpansion {
         }
     }
 
-    private String getRankingEntry(OfflinePlayer player, String params, JSONObject jsonData) {
+    private String getRankingEntry(OfflinePlayer player, String params, ObjectNode jsonData) {
         if (jsonData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(jsonData.entrySet());
-            sortedEntries.sort((a, b) -> {
-                int countA = Integer.parseInt(a.getValue().toString());
-                int countB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(countB, countA); // 降序排列
-            });
+            List<Map.Entry<String, Integer>> sortedEntries = new ArrayList<>();
+            jsonData.fields().forEachRemaining(entry ->
+                    sortedEntries.add(new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().asInt()))
+            );
+            sortedEntries.sort((a, b) -> Integer.compare(b.getValue(), a.getValue())); // 降序排列
 
             int totalPlayers = sortedEntries.size();
             OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
 
             for (int i = 1; i <= totalPlayers; i++) {
-                Map.Entry<String, Object> entry = sortedEntries.get(i - 1);
+                Map.Entry<String, Integer> entry = sortedEntries.get(i - 1);
                 String uuidKey = entry.getKey();
-                Object count = entry.getValue();
+                int count = entry.getValue();
 
                 if (params.equalsIgnoreCase(params.split("_")[0] + "_" + i)) {
                     OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));

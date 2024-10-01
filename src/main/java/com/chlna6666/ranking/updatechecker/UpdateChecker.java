@@ -1,21 +1,22 @@
 package com.chlna6666.ranking.updatechecker;
 
 import com.chlna6666.ranking.Ranking;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import javax.net.ssl.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
-import java.security.cert.X509Certificate;
+
 
 public class UpdateChecker {
     private final JavaPlugin plugin;
@@ -73,27 +74,27 @@ public class UpdateChecker {
 
     private void handleUpdateCheckResult(CommandSender sender) {
         String currentVersion = plugin.getDescription().getVersion();
+        Component message;
+
         if (isVersionHigher(latestVersion, currentVersion)) {
-            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion +
-                    ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": " + ChatColor.AQUA + viewUrl;
-            if (sender != null) {
-                sender.sendMessage(message);
-            } else {
-                Bukkit.getConsoleSender().sendMessage(message);
-            }
+            message = Component.text("[Ranking] ", NamedTextColor.GOLD)
+                    .append(Component.text(((Ranking) plugin).getI18n().translate("update_checker.new_version_found") + ": " + latestVersion, NamedTextColor.GREEN))
+                    .append(Component.text("  " + ((Ranking) plugin).getI18n().translate("update_checker.download_link") + ": ", NamedTextColor.GOLD))
+                    .append(Component.text(viewUrl, NamedTextColor.AQUA));
         } else if (latestVersion.equals(currentVersion)) {
-            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.GREEN + ((Ranking) plugin).getI18n().translate("update_checker.latest_version_installed");
-            if (sender == null) {
-                Bukkit.getConsoleSender().sendMessage(message);
-            }
+            message = Component.text("[Ranking] ", NamedTextColor.GOLD)
+                    .append(Component.text(((Ranking) plugin).getI18n().translate("update_checker.latest_version_installed"), NamedTextColor.GREEN));
         } else {
-            String message = ChatColor.GOLD + "[Ranking] " + ChatColor.RED + ((Ranking) plugin).getI18n().translate("update_checker.beta_version_installed") + ": " + plugin.getDescription().getVersion() +
-                    ChatColor.GOLD + "  " + ((Ranking) plugin).getI18n().translate("update_checker.backup_warning");
-            if (sender != null) {
-                sender.sendMessage(message);
-            } else {
-                Bukkit.getConsoleSender().sendMessage(message);
-            }
+            message = Component.text("[Ranking] ", NamedTextColor.GOLD)
+                    .append(Component.text(((Ranking) plugin).getI18n().translate("update_checker.beta_version_installed") + ": " + plugin.getDescription().getVersion(), NamedTextColor.RED))
+                    .append(Component.text("  " + ((Ranking) plugin).getI18n().translate("update_checker.backup_warning"), NamedTextColor.GOLD));
+        }
+
+        // 发送消息给玩家或控制台
+        if (sender instanceof Player) {
+            sender.sendMessage(message);
+        } else {
+            Bukkit.getConsoleSender().sendMessage(message);
         }
     }
 

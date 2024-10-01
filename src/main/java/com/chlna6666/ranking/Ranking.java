@@ -2,9 +2,9 @@ package com.chlna6666.ranking;
 
 import com.chlna6666.ranking.I18n.I18n;
 import com.chlna6666.ranking.updatechecker.UpdateChecker;
-import com.chlna6666.ranking.LeaderboardSettings;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -19,7 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -31,14 +30,14 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
 
 import com.chlna6666.ranking.metrics.Metrics;
-import org.json.simple.JSONObject;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -51,8 +50,10 @@ public class Ranking extends JavaPlugin implements Listener {
     private LeaderboardSettings leaderboardSettings;
     private UpdateChecker updateChecker;
 
-    private final Map<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
-    private final Map<World, Map<Location, Player>> pistonCache = new HashMap<>();
+    // 使用 ConcurrentHashMap 来确保线程安全
+    private final ConcurrentMap<UUID, BukkitRunnable> onlineTimers = new ConcurrentHashMap<>();
+    // 使用 ConcurrentHashMap 作为内层 Map，以提高并发性能
+    private final ConcurrentMap<World, ConcurrentMap<Location, Player>> pistonCache = new ConcurrentHashMap<>();
 
     private long SAVE_DELAY_TICKS;
     private long REGULAR_SAVE_INTERVAL_TICKS;
@@ -144,7 +145,7 @@ public class Ranking extends JavaPlugin implements Listener {
                 BlockFace pistonFacing = directional.getFacing();
                 Location bedrockPos = block.getRelative(pistonFacing).getLocation();
                 if (block.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
-                    pistonCache.computeIfAbsent(block.getWorld(), k -> new HashMap<>()).put(bedrockPos, player);
+                    pistonCache.computeIfAbsent(block.getWorld(), k -> new ConcurrentHashMap<>()).put(bedrockPos, player);
                     //getLogger().info("活塞由 " + player.getName() + " 放置，朝向基岩，位置：" + bedrockPos);
                 }
             }
@@ -197,16 +198,17 @@ public class Ranking extends JavaPlugin implements Listener {
         }
     }
 
-    private void handleEvent(Player player, String dataType, Map<String, Long> data, File file, String sidebarTitle) {
+    private void handleEvent(Player player, String dataType, ObjectNode data, File file, String sidebarTitle) {
         if (player == null) return;
+
         UUID uuid = player.getUniqueId();
-        long count = data.getOrDefault(uuid.toString(), 0L);
-        data.put(uuid.toString(), count + 1);
+        String uuidString = uuid.toString();
+        long count = data.has(uuidString) ? data.get(uuidString).asLong() : 0L;
+        data.put(uuidString, count + 1);
+
         updateScoreboards(player, sidebarTitle, data, dataType);
-
-        dataManager.startSaveTask(new AtomicBoolean(), () -> dataManager.saveJSON((JSONObject) data, file));
+        dataManager.startSaveTask(new AtomicBoolean(), () -> dataManager.saveJSON(data, file));
     }
-
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -217,20 +219,24 @@ public class Ranking extends JavaPlugin implements Listener {
             updateChecker.checkForUpdates(player);
         }
 
-        if (!dataManager.getPlayersData().containsKey(uuid.toString())) {
-            JSONObject playerInfo = new JSONObject();
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode playersData = dataManager.getPlayersData();
+
+        if (!playersData.has(uuid.toString())) {
+            ObjectNode playerInfo = mapper.createObjectNode();
             playerInfo.put("name", playerName);
-            dataManager.getPlayersData().put(uuid.toString(), playerInfo);
-            dataManager.saveJSONAsync(dataManager.getPlayersData(), dataManager.getDataFile());
+            playersData.set(uuid.toString(), playerInfo);
+            dataManager.saveJSONAsync(playersData, dataManager.getDataFile());
         } else {
-            JSONObject storedPlayerInfo = (JSONObject) dataManager.getPlayersData().get(uuid.toString());
-            String storedName = (String) storedPlayerInfo.get("name");
+            ObjectNode storedPlayerInfo = (ObjectNode) playersData.get(uuid.toString());
+            String storedName = storedPlayerInfo.get("name").asText();
 
             if (!storedName.equals(playerName)) {
                 storedPlayerInfo.put("name", playerName);
-                dataManager.saveJSONAsync(dataManager.getPlayersData(), dataManager.getDataFile());
+                dataManager.saveJSONAsync(playersData, dataManager.getDataFile());
             }
         }
+
         clearPlayerRankingObjective(player);
         updatePlayerScoreboards(player, uuid);
 
@@ -242,7 +248,10 @@ public class Ranking extends JavaPlugin implements Listener {
     }
 
     private void updatePlayerScoreboards(Player player, UUID uuid) {
-        JSONObject playerData = (JSONObject) dataManager.getPlayersData().getOrDefault(uuid.toString(), new JSONObject());
+        ObjectNode playerData = dataManager.getPlayersData().has(uuid.toString()) ?
+                (ObjectNode) dataManager.getPlayersData().get(uuid.toString()) :
+                new ObjectMapper().createObjectNode();
+
         checkAndUpdateScoreboard(player, playerData, "place", i18n.translate("sidebar.place"), dataManager.getPlaceData());
         checkAndUpdateScoreboard(player, playerData, "destroys", i18n.translate("sidebar.break"), dataManager.getDestroysData());
         checkAndUpdateScoreboard(player, playerData, "deads", i18n.translate("sidebar.death"), dataManager.getDeadsData());
@@ -250,10 +259,9 @@ public class Ranking extends JavaPlugin implements Listener {
         checkAndUpdateScoreboard(player, playerData, "onlinetime", i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData());
         checkAndUpdateScoreboard(player, playerData, "break_bedrock", i18n.translate("sidebar.break_bedrock"), dataManager.getBreakBedrockData());
     }
-
-    private void checkAndUpdateScoreboard(Player player, JSONObject playerData, String dataType, String sidebarTitle, Map<String, Long> data) {
-        Number value = (Number) playerData.getOrDefault(dataType, 0);
-        if (value.intValue() == 1) {
+    private void checkAndUpdateScoreboard(Player player, ObjectNode playerData, String dataType, String sidebarTitle, ObjectNode data) {
+        int value = playerData.has(dataType) ? playerData.get(dataType).asInt() : 0;
+        if (value == 1) {
             updateScoreboards(player, sidebarTitle, data, dataType);
         }
     }
@@ -262,14 +270,18 @@ public class Ranking extends JavaPlugin implements Listener {
         return new BukkitRunnable() {
             @Override
             public void run() {
-                long onlineTime = (long) dataManager.getOnlinetimeData().getOrDefault(uuid.toString(), 0L);
-                dataManager.getOnlinetimeData().put(uuid.toString(), onlineTime + 1);
-                dataManager.saveJSONAsync(dataManager.getOnlinetimeData(), dataManager.getOnlinetimeFile());
+                ObjectNode onlinetimeData = dataManager.getOnlinetimeData();
+                String uuidString = uuid.toString();
+
+                long onlineTime = onlinetimeData.has(uuidString) ? onlinetimeData.get(uuidString).asLong() : 0L;
+                onlinetimeData.put(uuidString, onlineTime + 1);
+
+                dataManager.saveJSONAsync(onlinetimeData, dataManager.getOnlinetimeFile());
 
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        updateScoreboards(player, i18n.translate("sidebar.online_time"), dataManager.getOnlinetimeData(), "onlinetime");
+                        updateScoreboards(player, i18n.translate("sidebar.online_time"), onlinetimeData, "onlinetime");
                     }
                 }.runTask(Ranking.this);
             }
@@ -298,55 +310,67 @@ public class Ranking extends JavaPlugin implements Listener {
         regularSaveTask.runTaskTimer(this, REGULAR_SAVE_INTERVAL_TICKS, REGULAR_SAVE_INTERVAL_TICKS);
     }
 
-    public void updateScoreboards(Player player, String sidebarTitle, Map<String, Long> data, String dataType) {
+    public void updateScoreboards(Player player, String sidebarTitle, ObjectNode data, String dataType) {
         // 获取当前使用 dataType 为 1 的在线玩家
         List<Player> dataTypeOnePlayers = Bukkit.getOnlinePlayers().stream()
                 .filter(p -> {
-                    JSONObject pPlayerData = (JSONObject) dataManager.getPlayersData().getOrDefault(p.getUniqueId().toString(), new JSONObject());
-                    Number pScoreboardConfig = (Number) pPlayerData.getOrDefault(dataType, 0);
-                    return pScoreboardConfig.intValue() == 1;
+                    ObjectNode pPlayerData = (ObjectNode) dataManager.getPlayersData().get(p.getUniqueId().toString());
+                    if (pPlayerData == null) {
+                        pPlayerData = new ObjectMapper().createObjectNode();
+                    }
+                    return pPlayerData.has(dataType) && pPlayerData.get(dataType).asInt() == 1;
                 })
                 .collect(Collectors.toList());
 
         // 遍历所有需要更新记分板的玩家
         for (Player onlinePlayer : dataTypeOnePlayers) {
             Scoreboard scoreboard = onlinePlayer.getScoreboard();
-            Objective objective = scoreboard.getObjective("Ranking_" + dataType);
+            String objectiveName = "Ranking_" + dataType;
+            Objective objective = scoreboard.getObjective(objectiveName);
 
             if (objective == null) {
-                objective = scoreboard.registerNewObjective("Ranking_" + dataType, "dummy", sidebarTitle);
+                // 创建新的 Objective
+                objective = scoreboard.registerNewObjective(objectiveName, "dummy", sidebarTitle);
                 objective.setDisplaySlot(DisplaySlot.SIDEBAR);
             } else if (!objective.getDisplayName().equals(sidebarTitle)) {
-                // 如果 objective 已存在但显示名称不正确，则更新显示名称
+                // 更新 Objective 的显示名称
                 objective.setDisplayName(sidebarTitle);
             }
 
-            Map<String, Integer> currentScores = new HashMap<>();
-            for (String entry : scoreboard.getEntries()) {
-                currentScores.put(entry, objective.getScore(entry).getScore());
-            }
+            // 获取当前记分板上的所有分数
+            Objective finalObjective = objective;
+            Map<String, Integer> currentScores = scoreboard.getEntries().stream()
+                    .collect(Collectors.toMap(
+                            entry -> entry,
+                            entry -> finalObjective.getScore(entry).getScore(),
+                            (a, b) -> a, // 合并函数，防止冲突
+                            HashMap::new
+                    ));
 
             // 更新每个玩家的数据
-            for (Map.Entry<String, Long> entry : data.entrySet()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = data.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
                 String uuidString = entry.getKey();
-                int rankingData = entry.getValue().intValue();
+                int rankingData = entry.getValue().asInt();
                 OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidString));
-                if (offlinePlayer != null) {
-                    String playerName = offlinePlayer.getName();
-                    Integer currentScore = currentScores.get(playerName);
-                    if (currentScore == null || currentScore != rankingData) {
-                        Score score = objective.getScore(playerName);
-                        score.setScore(rankingData);
-                    }
-                    currentScores.remove(playerName);
+                String playerName = offlinePlayer.getName();
+
+                // 检查当前分数是否需要更新
+                Integer currentScore = currentScores.get(playerName);
+                if (currentScore == null || currentScore != rankingData) {
+                    Score score = finalObjective.getScore(playerName);
+                    score.setScore(rankingData);
                 }
+
+                // 从当前分数中移除已更新的玩家
+                currentScores.remove(playerName);
             }
 
             // 移除不在数据中的玩家
-            for (String entry : currentScores.keySet()) {
-                scoreboard.resetScores(entry);
-            }
+            currentScores.keySet().forEach(scoreboard::resetScores);
 
+            // 重新设置记分板
             onlinePlayer.setScoreboard(scoreboard);
         }
     }
