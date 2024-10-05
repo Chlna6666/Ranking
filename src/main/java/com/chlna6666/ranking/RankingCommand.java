@@ -14,13 +14,17 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+
+import static org.bukkit.Bukkit.getLogger;
 
 public class RankingCommand implements CommandExecutor {
     private final Ranking pluginInstance;
@@ -164,10 +168,10 @@ public class RankingCommand implements CommandExecutor {
             } else if (valueNode.isInt()) {
                 return valueNode.asInt();
             } else {
-                Bukkit.getLogger().warning("Unexpected value type for " + rankingValue + ": " + valueNode.getNodeType());
+                getLogger().warning("Unexpected value type for " + rankingValue + ": " + valueNode.getNodeType());
             }
         } else {
-            Bukkit.getLogger().warning("Player data is null or doesn't contain key: " + rankingValue);
+            getLogger().warning("Player data is null or doesn't contain key: " + rankingValue);
         }
         return 0;
     }
@@ -263,9 +267,16 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void clearScoreboard(Player player) {
-        ScoreboardManager manager = Bukkit.getScoreboardManager();
-        Scoreboard board = manager.getNewScoreboard();
-        player.setScoreboard(board);
+        Scoreboard scoreboard = player.getScoreboard();
+
+        // 清除玩家记分板上的所有目标
+        for (Objective objective : new ArrayList<>(scoreboard.getObjectives())) {
+            try {
+                objective.unregister();
+            } catch (Exception e) {
+                getLogger().warning("无法注销目标: " + objective.getName() + ". 错误: " + e.getMessage());
+            }
+        }
     }
 
     private void displayHelpMessage(Player player) {

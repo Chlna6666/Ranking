@@ -17,6 +17,8 @@ import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
 
+import static com.chlna6666.ranking.utils.Utils.isFolia;
+import static org.bukkit.Bukkit.getServer;
 
 public class UpdateChecker {
     private final JavaPlugin plugin;
@@ -34,44 +36,59 @@ public class UpdateChecker {
     public void checkForUpdates(CommandSender sender) {
         if (!config.getBoolean("update_checker.enabled")) return;
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                URL url = new URL(apiUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-
-                int responseCode = connection.getResponseCode();
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_failed").replace("{code}", String.valueOf(responseCode)));
-                    return;
-                }
-
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                in.close();
-
-                JSONParser parser = new JSONParser();
-                JSONObject json = (JSONObject) parser.parse(response.toString());
-                JSONObject data = (JSONObject) json.get("data");
-                latestVersion = (String) data.get("version");
-                viewUrl = (String) data.get("view_url");
-
-                Bukkit.getScheduler().runTask(plugin, () -> handleUpdateCheckResult(sender));
-            } catch (SocketException e) {
-                logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
-            } catch (Exception e) {
-                plugin.getLogger().severe(((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
-            }
-        });
+        // 根据是否为 Folia 使用不同的调度方式
+        if (isFolia()) {
+            getServer().getGlobalRegionScheduler().run(plugin, taskContext -> runUpdateCheckAsync(sender));
+        } else {
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> runUpdateCheckAsync(sender));
+        }
     }
 
+    // 核心的异步更新检查逻辑
+    private void runUpdateCheckAsync(CommandSender sender) {
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_failed").replace("{code}", String.valueOf(responseCode)));
+                return;
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject) parser.parse(response.toString());
+            JSONObject data = (JSONObject) json.get("data");
+            latestVersion = (String) data.get("version");
+            viewUrl = (String) data.get("view_url");
+
+            // 调度同步任务处理更新结果
+            if (isFolia()) {
+                getServer().getGlobalRegionScheduler().run(plugin, taskContext -> handleUpdateCheckResult(sender));
+            } else {
+                Bukkit.getScheduler().runTask(plugin, () -> handleUpdateCheckResult(sender));
+            }
+
+        } catch (SocketException e) {
+            logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
+        } catch (Exception e) {
+            plugin.getLogger().severe(((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
+        }
+    }
+
+    // 同步任务：处理版本检查结果并发送消息
     private void handleUpdateCheckResult(CommandSender sender) {
         String currentVersion = plugin.getDescription().getVersion();
         Component message;
@@ -98,6 +115,7 @@ public class UpdateChecker {
         }
     }
 
+    // 比较版本号是否有更新
     private boolean isVersionHigher(String remoteVersion, String currentVersion) {
         String[] remoteParts = remoteVersion.replace("v", "").split("\\.");
         String[] currentParts = currentVersion.replace("v", "").split("\\.");
@@ -116,6 +134,7 @@ public class UpdateChecker {
         return false;
     }
 
+    // 日志记录警告
     private void logWarning(String message) {
         if (!warningSent) {
             Bukkit.getLogger().warning(((Ranking) plugin).getI18n().translate("update_checker.update_checker") + message);
@@ -124,4 +143,5 @@ public class UpdateChecker {
             Bukkit.getScheduler().runTaskLater(plugin, () -> warningSent = false, 1200L); // 1200 ticks = 1 minute
         }
     }
+
 }

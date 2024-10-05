@@ -1,5 +1,6 @@
 package com.chlna6666.ranking;
 
+import com.chlna6666.ranking.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.bukkit.Bukkit;
@@ -7,6 +8,9 @@ import org.bukkit.Bukkit;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.chlna6666.ranking.utils.Utils.isFolia;
+import static org.bukkit.Bukkit.getServer;
 
 public class DataManager {
     private final Ranking plugin;
@@ -79,8 +83,15 @@ public class DataManager {
         }
     }
 
+
     public void saveJSONAsync(ObjectNode json, File file) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> saveJSON(json, file));
+        if (isFolia()) {
+            // 使用 Folia 的调度方式
+            getServer().getGlobalRegionScheduler().run(plugin, task -> saveJSON(json, file));
+        } else {
+            // 使用 Bukkit 的异步调度方式
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> saveJSON(json, file));
+        }
     }
 
     public void saveJSON(ObjectNode json, File file) {

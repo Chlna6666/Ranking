@@ -5,7 +5,7 @@ main: com.chlna6666.ranking.Ranking
 
 api-version: '1.13'
 website: https://www.minebbs.com/resources/7531/
-folia-supported: false
+folia-supported: true
 softdepend: [PlaceholderAPI]
 
 commands:
