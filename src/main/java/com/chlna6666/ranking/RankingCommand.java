@@ -16,7 +16,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static com.chlna6666.ranking.utils.Utils.isFolia;
 import static org.bukkit.Bukkit.getLogger;
 
 public class RankingCommand implements CommandExecutor {
@@ -122,7 +122,15 @@ public class RankingCommand implements CommandExecutor {
         if (scoreboardStatus == 1) {
             clearScoreboard(player);
             player.sendMessage(displayName + i18n.translate("command.enabled"));
-            pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
+            if (isFolia()) {
+                Bukkit.getRegionScheduler().run(pluginInstance, player.getLocation() ,scheduledTask -> {
+                    pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
+                });
+
+            } else {
+                pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
+            }
+
         } else {
             player.sendMessage(displayName + i18n.translate("command.disabled"));
             clearScoreboard(player);

@@ -262,76 +262,25 @@ public class Ranking extends JavaPlugin implements Listener {
         updatePlayerScoreboards(player, uuid);
 
         if (leaderboardSettings.isLeaderboardEnabled("onlinetime")) {
-            // 调用统一的定时器方法
-            startOnlineTimeTimer(player, uuid);
-        }
-    }
-
-    // 创建在线时间的定时任务
-    private BukkitRunnable createOnlineTimeTimer(Player player, UUID uuid) {
-        return new BukkitRunnable() {
-            @Override
-            public void run() {
-                ObjectNode onlinetimeData = dataManager.getOnlinetimeData();
-                String uuidString = uuid.toString();
-
-                long onlineTime = onlinetimeData.has(uuidString) ? onlinetimeData.get(uuidString).asLong() : 0L;
-                onlinetimeData.put(uuidString, onlineTime + 1);
-
-                dataManager.saveJSONAsync(onlinetimeData, dataManager.getOnlinetimeFile());
-
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        updateScoreboards(player, i18n.translate("sidebar.online_time"), onlinetimeData, "onlinetime");
-                    }
-                }.runTask(Ranking.this);  // 主线程更新计分板
-            }
-        };
-    }
-
-    // 统一的在线时间定时器启动方法，支持 Folia 和 Bukkit
-    private void startOnlineTimeTimer(Player player, UUID uuid) {
-        if (isFolia()) {
-            // Folia 调度方式
-            getServer().getGlobalRegionScheduler().runAtFixedRate(
-                    this,  // 插件实例
-                    task -> {
-                        ObjectNode onlinetimeData = dataManager.getOnlinetimeData();
-                        String uuidString = uuid.toString();
-
-                        long onlineTime = onlinetimeData.has(uuidString) ? onlinetimeData.get(uuidString).asLong() : 0L;
-                        onlinetimeData.put(uuidString, onlineTime + 1);
-
-                        dataManager.saveJSONAsync(onlinetimeData, dataManager.getOnlinetimeFile());
-
-                        // 更新计分板（必须在主线程）
-                        getServer().getGlobalRegionScheduler().run(this, taskContext -> {
-                            updateScoreboards(player, i18n.translate("sidebar.online_time"), onlinetimeData, "onlinetime");
-                        });
-                    },
-                    1200L * 50L,  // 初始延迟，单位为毫秒
-                    1200L * 50L   // 执行间隔
-            );
-        } else {
-            // Bukkit 调度方式
             BukkitRunnable timer = createOnlineTimeTimer(player, uuid);
-            onlineTimers.put(uuid, timer);
-            timer.runTaskTimer(this, 1200, 1200);  // 每分钟更新一次（单位为 ticks）
-        }
-    }
+            if (isFolia()) {
+                // 使用Folia的调度器进行定时任务
+                Bukkit.getGlobalRegionScheduler().runAtFixedRate(
+                        this,
+                        scheduledTask -> {
+                            if (player.isOnline()) {
+                                timer.run();
+                            }
+                        },
+                        1200L, // 延迟（ticks，1秒=20 ticks）
+                        1200L  // 间隔（ticks）
+                );
+            } else {
+                onlineTimers.put(uuid, timer);
+                timer.runTaskTimer(this, 1200L, 1200L); // 延迟和间隔单位为tick（20 ticks = 1秒）
+            }
 
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
-        BukkitRunnable timer = onlineTimers.get(uuid);
-        if (timer != null) {
-            timer.cancel();
-            onlineTimers.remove(uuid);
         }
-        //clearPlayerRankingObjective(player);
     }
 
     private void updatePlayerScoreboards(Player player, UUID uuid) {
@@ -352,6 +301,44 @@ public class Ranking extends JavaPlugin implements Listener {
             updateScoreboards(player, sidebarTitle, data, dataType);
         }
     }
+
+    // 创建在线时间的定时任务
+    private BukkitRunnable createOnlineTimeTimer(Player player, UUID uuid) {
+        return new BukkitRunnable() {
+            @Override
+            public void run() {
+                ObjectNode onlinetimeData = dataManager.getOnlinetimeData();
+                String uuidString = uuid.toString();
+
+                // 获取玩家在线时间并更新
+                long onlineTime = onlinetimeData.has(uuidString) ? onlinetimeData.get(uuidString).asLong() : 0L;
+                onlinetimeData.put(uuidString, onlineTime + 1);
+
+                // 异步保存在线时间数据
+                dataManager.saveJSONAsync(onlinetimeData, dataManager.getOnlinetimeFile());
+
+                // 更新计分板，需要在主线程上运行
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        updateScoreboards(player, i18n.translate("sidebar.online_time"), onlinetimeData, "onlinetime");
+                    }
+                }.runTask(Ranking.this);  // 主线程更新计分板
+            }
+        };
+    }
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+        BukkitRunnable timer = onlineTimers.get(uuid);
+        if (timer != null) {
+            timer.cancel();
+            onlineTimers.remove(uuid);
+        }
+        //clearPlayerRankingObjective(player);
+    }
+
 
     private void startRegularSaveTask() {
         if (isFolia()) {
@@ -387,7 +374,7 @@ public class Ranking extends JavaPlugin implements Listener {
                 .collect(Collectors.toList());
 
         // 遍历所有需要更新记分板的玩家
-        for (Player onlinePlayer : dataTypeOnePlayers) {
+       for (Player onlinePlayer : dataTypeOnePlayers) {
             Scoreboard scoreboard = onlinePlayer.getScoreboard();
             String objectiveName = "Ranking_" + dataType;
             Objective objective = scoreboard.getObjective(objectiveName);
