@@ -1,39 +1,37 @@
 package com.chlna6666.ranking;
 
-import com.chlna6666.ranking.utils.Utils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.bukkit.Bukkit;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.chlna6666.ranking.utils.Utils.isFolia;
-import static org.bukkit.Bukkit.getServer;
 
 public class DataManager {
     private final Ranking plugin;
     private final AtomicBoolean saveTaskRunning = new AtomicBoolean(false);
-    private ObjectNode playersData;
-    private ObjectNode placeData;
-    private ObjectNode destroysData;
-    private ObjectNode deadsData;
-    private ObjectNode mobdieData;
-    private ObjectNode onlinetimeData;
-    private ObjectNode breakBedrockData;
+    private JSONObject playersData;
+    private JSONObject placeData;
+    private JSONObject destroysData;
+    private JSONObject deadsData;
+    private JSONObject mobdieData;
+    private JSONObject onlinetimeData;
+    private JSONObject breakBedrockData; // 破基岩榜数据
     private File dataFile;
     private File placeFile;
     private File destroysFile;
     private File deadsFile;
     private File mobdieFile;
     private File onlinetimeFile;
-    private File breakBedrockFile;
-    private final ObjectMapper objectMapper;
+    private File breakBedrockFile; // 破基岩榜文件
 
     public DataManager(Ranking plugin) {
         this.plugin = plugin;
-        this.objectMapper = new ObjectMapper();
         loadFiles();
     }
 
@@ -52,7 +50,7 @@ public class DataManager {
         deadsFile = new File(dataFolder, "deads.json");
         mobdieFile = new File(dataFolder, "mobdie.json");
         onlinetimeFile = new File(dataFolder, "onlinetime.json");
-        breakBedrockFile = new File(dataFolder, "break_bedrock.json");
+        breakBedrockFile = new File(dataFolder, "break_bedrock.json"); // 初始化破基岩榜文件
 
         playersData = initializeAndLoadJSON(dataFile);
         placeData = initializeAndLoadJSON(placeFile);
@@ -60,47 +58,54 @@ public class DataManager {
         deadsData = initializeAndLoadJSON(deadsFile);
         mobdieData = initializeAndLoadJSON(mobdieFile);
         onlinetimeData = initializeAndLoadJSON(onlinetimeFile);
-        breakBedrockData = initializeAndLoadJSON(breakBedrockFile);
+        breakBedrockData = initializeAndLoadJSON(breakBedrockFile); // 初始化破基岩榜数据
     }
 
-    private ObjectNode initializeAndLoadJSON(File file) {
+    private JSONObject initializeAndLoadJSON(File file) {
         if (!file.exists() || file.length() == 0) {
-            ObjectNode emptyNode = objectMapper.createObjectNode();
-            saveJSON(emptyNode, file);
-            return emptyNode;
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.write("{}");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return new JSONObject();
         } else {
             return loadJSON(file);
         }
     }
 
-    private ObjectNode loadJSON(File file) {
-        try {
-            return (ObjectNode) objectMapper.readTree(file);
-        } catch (IOException e) {
+    private JSONObject loadJSON(File file) {
+        JSONParser parser = new JSONParser();
+        try (FileReader reader = new FileReader(file)) {
+            Object parsedObject = parser.parse(reader);
+            if (parsedObject instanceof JSONObject) {
+                return (JSONObject) parsedObject;
+            } else {
+                Bukkit.getLogger().warning("Error loading JSON from file " + file.getName() + ": The root element is not a JSON object.");
+                return new JSONObject();
+            }
+        } catch (IOException | ParseException e) {
             Bukkit.getLogger().warning("Error loading JSON from file " + file.getName() + ": " + e.getMessage());
             e.printStackTrace();
-            return objectMapper.createObjectNode();
+            return new JSONObject();
         }
     }
 
-
-    public void saveJSONAsync(ObjectNode json, File file) {
-        if (isFolia()) {
-            // 使用 Folia 的调度方式
-            getServer().getGlobalRegionScheduler().run(plugin, task -> saveJSON(json, file));
-        } else {
-            // 使用 Bukkit 的异步调度方式
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> saveJSON(json, file));
-        }
+    public void saveJSONAsync(JSONObject json, File file) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> saveJSON(json, file));
     }
 
-    public void saveJSON(ObjectNode json, File file) {
+    public void saveJSON(JSONObject json, File file) {
         try {
-            objectMapper.writeValue(file, json);
+            Path filePath = file.toPath();
+            try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                writer.write(json.toJSONString());
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     public void saveAllData() {
         saveJSON(playersData, dataFile);
@@ -109,7 +114,7 @@ public class DataManager {
         saveJSON(deadsData, deadsFile);
         saveJSON(mobdieData, mobdieFile);
         saveJSON(onlinetimeData, onlinetimeFile);
-        saveJSON(breakBedrockData, breakBedrockFile);
+        saveJSON(breakBedrockData, breakBedrockFile); // 保存破基岩榜数据
     }
 
     public void startSaveTask(AtomicBoolean taskRunning, Runnable task) {
@@ -121,36 +126,35 @@ public class DataManager {
         }
     }
 
-    public ObjectNode getPlayersData() {
+
+    public JSONObject getPlayersData() {
         return playersData;
     }
 
-    public ObjectNode getPlaceData() {
+    public JSONObject getPlaceData() {
         return placeData;
     }
 
-    public ObjectNode getDestroysData() {
+    public JSONObject getDestroysData() {
         return destroysData;
     }
 
-    public ObjectNode getDeadsData() {
+    public JSONObject getDeadsData() {
         return deadsData;
     }
 
-    public ObjectNode getMobdieData() {
-        return  mobdieData;
+    public JSONObject getMobdieData() {
+        return mobdieData;
     }
 
-    public ObjectNode getOnlinetimeData() {
+    public JSONObject getOnlinetimeData() {
         return onlinetimeData;
     }
 
-    public ObjectNode getBreakBedrockData() {
-        return  breakBedrockData;
+    public JSONObject getBreakBedrockData() { // 获取破基岩榜数据
+        return breakBedrockData;
     }
 
-
-    // File getters remain unchanged
     public File getDataFile() {
         return dataFile;
     }
@@ -175,7 +179,7 @@ public class DataManager {
         return onlinetimeFile;
     }
 
-    public File getBreakBedrockFile() {
+    public File getBreakBedrockFile() { // 获取破基岩榜文件
         return breakBedrockFile;
     }
 }

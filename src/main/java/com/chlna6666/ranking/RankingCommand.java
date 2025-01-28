@@ -1,13 +1,9 @@
 package com.chlna6666.ranking;
 
 import com.chlna6666.ranking.I18n.I18n;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -16,7 +12,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
+import org.json.simple.JSONObject;
+
+
 import org.jetbrains.annotations.NotNull;
+
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,7 +31,6 @@ public class RankingCommand implements CommandExecutor {
     private final DataManager dataManager;
     private final I18n i18n;
     private final LeaderboardSettings leaderboardSettings;
-    private final ObjectMapper objectMapper;
     private final BukkitAudiences adventure;
 
     public RankingCommand(Ranking pluginInstance, DataManager dataManager, I18n i18n) {
@@ -40,7 +39,6 @@ public class RankingCommand implements CommandExecutor {
         this.i18n = i18n;
         this.adventure = BukkitAudiences.create(pluginInstance);
         this.leaderboardSettings = LeaderboardSettings.getInstance();
-        this.objectMapper = new ObjectMapper();
     }
 
     @Override
@@ -115,7 +113,7 @@ public class RankingCommand implements CommandExecutor {
         }
     }
 
-    private void toggleScoreboard(Player player, String rankingName, String displayName, ObjectNode rankingData) {
+    private void toggleScoreboard(Player player, String rankingName, String displayName, JSONObject rankingData) {
         updateScoreboardStatus(player, rankingName);
         int scoreboardStatus = getPlayerScoreboardStatus(player, rankingName);
 
@@ -123,12 +121,11 @@ public class RankingCommand implements CommandExecutor {
             clearScoreboard(player);
             player.sendMessage(displayName + i18n.translate("command.enabled"));
             if (isFolia()) {
-                Bukkit.getRegionScheduler().run(pluginInstance, player.getLocation() ,scheduledTask -> {
-                    pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
+                Bukkit.getRegionScheduler().run(pluginInstance, player.getLocation(), scheduledTask -> {
+                    pluginInstance.updateScoreboards( displayName, rankingData, rankingName);
                 });
-
             } else {
-                pluginInstance.updateScoreboards(player, displayName, rankingData, rankingName);
+                pluginInstance.updateScoreboards(displayName, rankingData, rankingName);
             }
 
         } else {
@@ -137,56 +134,47 @@ public class RankingCommand implements CommandExecutor {
         }
     }
 
-
     private void updateScoreboardStatus(Player player, String rankingValue) {
         List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock");
 
         UUID uuid = player.getUniqueId();
-        ObjectNode playersData = dataManager.getPlayersData();
-        JsonNode playerData = playersData.get(uuid.toString());
+        JSONObject playersData = dataManager.getPlayersData();
+        JSONObject playerData = (JSONObject) playersData.get(uuid.toString());
 
-        if (playerData != null && playerData.isObject()) {
-            ObjectNode playerDataObject = (ObjectNode) playerData;
-
+        if (playerData != null) {
             for (String key : specificKeys) {
                 if (!key.equals(rankingValue)) {
-                    playerDataObject.put(key, 0L);
+                    playerData.put(key, 0L);
                 }
             }
 
             if (specificKeys.contains(rankingValue)) {
-                long currentValue = playerDataObject.has(rankingValue) ? playerDataObject.get(rankingValue).asLong() : 0;
+                long currentValue = playerData.containsKey(rankingValue) ? (Long) playerData.get(rankingValue) : 0;
                 long newStatus = (currentValue == 0) ? 1 : 0;
-                playerDataObject.put(rankingValue, newStatus);
+                playerData.put(rankingValue, newStatus);
             }
 
-            dataManager.saveJSONAsync((ObjectNode) playersData, dataManager.getDataFile());
+            dataManager.saveJSONAsync(playersData, dataManager.getDataFile());
         }
     }
 
-
-
     private int getPlayerScoreboardStatus(Player player, String rankingValue) {
-        ObjectNode playerData = getPlayerData(player);
-        if (playerData != null && playerData.has(rankingValue)) {
-            JsonNode valueNode = playerData.get(rankingValue);
-
-            if (valueNode.isLong()) {
-                return valueNode.asInt();
-            } else if (valueNode.isInt()) {
-                return valueNode.asInt();
-            } else {
-                getLogger().warning("Unexpected value type for " + rankingValue + ": " + valueNode.getNodeType());
+        JSONObject playerData = getPlayerData(player);
+        if (playerData != null && playerData.containsKey(rankingValue)) {
+            Object value = playerData.get(rankingValue);
+            if (value instanceof Long) {
+                return ((Long) value).intValue();
+            } else if (value instanceof Integer) {
+                return (Integer) value;
             }
-        } else {
-            getLogger().warning("Player data is null or doesn't contain key: " + rankingValue);
         }
         return 0;
     }
-    private ObjectNode getPlayerData(Player player) {
+
+    private JSONObject getPlayerData(Player player) {
         UUID uuid = player.getUniqueId();
-        ObjectNode playersData = dataManager.getPlayersData();
-        return (ObjectNode) playersData.get(uuid.toString());
+        JSONObject playersData = dataManager.getPlayersData();
+        return (JSONObject) playersData.get(uuid.toString());
     }
 
     private void displayAllRankings(Player player) {
@@ -240,13 +228,11 @@ public class RankingCommand implements CommandExecutor {
         }
     }
 
-    private void displayRankingData(Player player, String title, ObjectNode data) {
+    private void displayRankingData(Player player, String title, JSONObject data) {
         player.sendMessage(Component.text(title + i18n.translate("command.colon"), NamedTextColor.GOLD));
-        data.fields().forEachRemaining(entry -> {
+        data.forEach((key, value) -> {
             try {
-                String key = entry.getKey();
-                long value = entry.getValue().asLong();
-                UUID uuid = UUID.fromString(key);
+                UUID uuid = UUID.fromString((String) key);
                 OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
                 String playerName = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown Player";
 
@@ -255,17 +241,17 @@ public class RankingCommand implements CommandExecutor {
 
                 adventure.player(player).sendMessage(message);
             } catch (IllegalArgumentException e) {
-                adventure.player(player).sendMessage(Component.text("Error parsing UUID: " + entry.getKey(), NamedTextColor.RED));
+                adventure.player(player).sendMessage(Component.text("Error parsing UUID: " + key, NamedTextColor.RED));
             }
         });
     }
 
-    private void displayPlayerData(Player player, String title, ObjectNode data, UUID uuid) {
-        JsonNode value = data.get(uuid.toString());
+    private void displayPlayerData(Player player, String title, JSONObject data, UUID uuid) {
+        Object value = data.get(uuid.toString());
         if (value != null) {
             adventure.player(player).sendMessage(
                     Component.text(title + i18n.translate("command.colon"), NamedTextColor.GOLD)
-                            .append(Component.text(value.asText(), NamedTextColor.GREEN))
+                            .append(Component.text(value.toString(), NamedTextColor.GREEN))
             );
         } else {
             adventure.player(player).sendMessage(
@@ -288,7 +274,6 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void displayHelpMessage(Player player) {
-
         player.sendMessage("§3§l" + i18n.translate("command.help.header") + " §7by Chlna6666");
         player.sendMessage("§b/ranking place §f- §7" + i18n.translate("command.help.place"));
         player.sendMessage("§b/ranking destroys §f- §7" + i18n.translate("command.help.destroys"));
@@ -301,6 +286,4 @@ public class RankingCommand implements CommandExecutor {
         player.sendMessage("§b/ranking list <ranking_name> §f- §7" + i18n.translate("command.help.list"));
         player.sendMessage("§b/ranking help §f- §7" + i18n.translate("command.help.help"));
     }
-
-
 }
