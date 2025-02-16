@@ -22,6 +22,10 @@ jobs:
         with:
           distribution: 'zulu' # See 'Supported distributions' for available options
           java-version: '17'
+          cache: 'gradle'
+          cache-dependency-path: | # optional
+            sub-project/*.gradle*
+            sub-project/**/gradle-wrapper.properties
 
       # 3. 添加 Gradle 缓存（可选但推荐）
       - name: Cache Gradle dependencies
