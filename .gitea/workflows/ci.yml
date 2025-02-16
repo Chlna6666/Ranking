@@ -18,11 +18,10 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. 设置 JDK 17（自动安装并配置）
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
+          distribution: 'zulu' # See 'Supported distributions' for available options
           java-version: '17'
-          distribution: 'temurin'
 
       # 3. 添加 Gradle 缓存（可选但推荐）
       - name: Cache Gradle dependencies
