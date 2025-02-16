@@ -20,7 +20,7 @@ public class RankingTabCompleter implements TabCompleter {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> subCommands = new ArrayList<>();
-        List<String> leaderboardCommands = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock");
+        List<String> leaderboardCommands = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock","dynamic");
 
         if (args.length == 1) {
             for (String cmd : leaderboardCommands) {
