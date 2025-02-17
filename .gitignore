@@ -118,3 +118,4 @@ run/
 !gradle-wrapper.jar
 
 pull.bat
+gradle-8.1.1/

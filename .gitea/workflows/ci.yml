@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Gradle
-        run: sudo apt-get update && sudo apt-get install -y gradle
+        run: sudo apt-get update && sudo apt-get -y
 
       # 2. 设置 JDK 17（自动安装并配置）
       - uses: actions/setup-java@v4
@@ -44,7 +44,8 @@ jobs:
 
       # 5. 执行 Gradle 构建
       - name: Build with Gradle
-        run: gradle shadowJar
+        run: ./gradlew shadowJar
+
 
 
       # 6. 上传构建产物
