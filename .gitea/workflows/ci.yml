@@ -41,7 +41,7 @@ jobs:
 
       # 5. 执行 Gradle 构建
       - name: Build with Gradle
-        run: gradlew shadowJar
+        run: ./gradlew shadowJar
 
       # 6. 上传构建产物
       - name: Upload Artifact
