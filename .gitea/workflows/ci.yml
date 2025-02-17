@@ -39,13 +39,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 4. 赋予 gradlew 执行权限
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
       # 5. 执行 Gradle 构建
       - name: Build with Gradle
-        run: ./gradlew shadowJar
+        run: gradlew shadowJar
 
       # 6. 上传构建产物
       - name: Upload Artifact
