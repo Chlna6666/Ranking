@@ -20,7 +20,7 @@ public class RankingTabCompleter implements TabCompleter {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, String[] args) {
         List<String> subCommands = new ArrayList<>();
-        List<String> leaderboardCommands = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock","dynamic");
+        List<String> leaderboardCommands = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock");
 
         if (args.length == 1) {
             for (String cmd : leaderboardCommands) {
@@ -28,7 +28,7 @@ public class RankingTabCompleter implements TabCompleter {
                     subCommands.add(cmd);
                 }
             }
-            subCommands.addAll(Arrays.asList("all", "my", "list", "help"));
+            subCommands.addAll(Arrays.asList("all", "my", "list", "help","dynamic"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
             for (String cmd : leaderboardCommands) {
                 if (leaderboardSettings.isLeaderboardEnabled(cmd)) {

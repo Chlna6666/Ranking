@@ -390,14 +390,19 @@ public class Ranking extends JavaPlugin implements Listener {
         // 临时存储有效玩家名称
         Set<String> validNames = new HashSet<>();
 
+        // 从缓存中获取玩家数据，避免每次调用 getOfflinePlayer
+        JSONObject playersData = dataManager.getPlayersData();
+
         // 更新玩家分数
         for (Map.Entry<String, Long> entry : data.entrySet()) {
             String uuid = entry.getKey();
             long scoreValue = entry.getValue();
 
-            // 获取玩家最新名称
-            OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
-            String currentName = player.getName() != null ? player.getName() : "Unknown";
+            String currentName = "Unknown";
+            if (playersData.containsKey(uuid)) {
+                JSONObject playerData = (JSONObject) playersData.get(uuid);
+                currentName = (String) playerData.getOrDefault("name", "Unknown");
+            }
             validNames.add(currentName);
 
             // 处理玩家改名
@@ -437,8 +442,7 @@ public class Ranking extends JavaPlugin implements Listener {
         // 更新玩家显示状态
         Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         for (Player p : Bukkit.getOnlinePlayers()) {
-            JSONObject playerData = (JSONObject) dataManager.getPlayersData()
-                    .getOrDefault(p.getUniqueId().toString(), new JSONObject());
+            JSONObject playerData = (JSONObject) playersData.getOrDefault(p.getUniqueId().toString(), new JSONObject());
             boolean shouldShow = ((Number) playerData.getOrDefault(dataType, 0)).intValue() == 1;
 
             if (shouldShow && !p.getScoreboard().equals(scoreboard)) {
@@ -448,6 +452,7 @@ public class Ranking extends JavaPlugin implements Listener {
             }
         }
     }
+
 
 
     private void clearPlayerRankingObjective(Player player) {

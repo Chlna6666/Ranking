@@ -80,6 +80,11 @@ public class RankingCommand implements CommandExecutor {
             case "help":
                 displayHelpMessage(player);
                 break;
+
+            case "dynamic":
+                dynamicScoreboard(player, args[0].toLowerCase(), i18n.translate("sidebar.dynamic"), dataManager.getPlayersData());
+                break;
+
             default:
                 player.sendMessage(i18n.translate("command.unknown_command"));
                 break;
@@ -113,6 +118,27 @@ public class RankingCommand implements CommandExecutor {
         }
     }
 
+    private void dynamicScoreboard(Player player, String rankingName, String displayName, JSONObject rankingData) {
+        updateScoreboardStatus(player, rankingName);
+        int scoreboardStatus = getPlayerScoreboardStatus(player, rankingName);
+
+        if (scoreboardStatus == 1) {
+            clearScoreboard(player);
+            player.sendMessage(displayName + i18n.translate("command.enabled"));
+            if (isFolia()) {
+                Bukkit.getRegionScheduler().run(pluginInstance, player.getLocation(), scheduledTask -> {
+                    pluginInstance.updateScoreboards( displayName, rankingData, rankingName);
+                });
+            } else {
+                pluginInstance.updateScoreboards(displayName, rankingData, rankingName);
+            }
+
+        } else {
+            player.sendMessage(displayName + i18n.translate("command.disabled"));
+            clearScoreboard(player);
+        }
+    }
+
     private void toggleScoreboard(Player player, String rankingName, String displayName, JSONObject rankingData) {
         updateScoreboardStatus(player, rankingName);
         int scoreboardStatus = getPlayerScoreboardStatus(player, rankingName);
@@ -135,7 +161,7 @@ public class RankingCommand implements CommandExecutor {
     }
 
     private void updateScoreboardStatus(Player player, String rankingValue) {
-        List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock");
+        List<String> specificKeys = Arrays.asList("place", "destroys", "deads", "mobdie", "onlinetime", "break_bedrock","dynamic");
 
         UUID uuid = player.getUniqueId();
         JSONObject playersData = dataManager.getPlayersData();
@@ -281,6 +307,7 @@ public class RankingCommand implements CommandExecutor {
         player.sendMessage("§b/ranking mobdie §f- §7" + i18n.translate("command.help.mobdie"));
         player.sendMessage("§b/ranking onlinetime §f- §7" + i18n.translate("command.help.onlinetime"));
         player.sendMessage("§b/ranking break_bedrock §f- §7" + i18n.translate("command.help.break_bedrock"));
+        player.sendMessage("§b/ranking dynamic §f- §7" + i18n.translate("command.help.dynamic"));
         player.sendMessage("§b/ranking all §f- §7" + i18n.translate("command.help.all"));
         player.sendMessage("§b/ranking my §f- §7" + i18n.translate("command.help.my"));
         player.sendMessage("§b/ranking list <ranking_name> §f- §7" + i18n.translate("command.help.list"));
