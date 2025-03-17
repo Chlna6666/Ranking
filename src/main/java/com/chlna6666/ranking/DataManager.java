@@ -13,15 +13,15 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DataManager {
-    private final Ranking plugin;
+    final Ranking plugin;
     private final AtomicBoolean saveTaskRunning = new AtomicBoolean(false);
-    private JSONObject playersData;
-    private JSONObject placeData;
-    private JSONObject destroysData;
-    private JSONObject deadsData;
-    private JSONObject mobdieData;
-    private JSONObject onlinetimeData;
-    private JSONObject breakBedrockData; // 破基岩榜数据
+    JSONObject playersData;
+    JSONObject placeData;
+    JSONObject destroysData;
+    JSONObject deadsData;
+    JSONObject mobdieData;
+    JSONObject onlinetimeData;
+    JSONObject breakBedrockData; // 破基岩榜数据
     private File dataFile;
     private File placeFile;
     private File destroysFile;

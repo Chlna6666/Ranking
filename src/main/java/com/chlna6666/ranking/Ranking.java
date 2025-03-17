@@ -70,9 +70,12 @@ public class Ranking extends JavaPlugin implements Listener {
             }
         }
 
-
         configManager = new ConfigManager(this);
-        dataManager = new DataManager(this);
+        if (Objects.requireNonNull(getConfig().getString("data_storage.method")).equalsIgnoreCase("mysql")) {
+            dataManager = new MySQLDataManager(this);
+        } else {
+            dataManager = new DataManager(this);
+        }
         leaderboardSettings = LeaderboardSettings.getInstance();
         leaderboardSettings.loadSettings(configManager);
         logPluginInfo();
