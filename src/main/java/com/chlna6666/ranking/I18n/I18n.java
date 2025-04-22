@@ -1,6 +1,5 @@
 package com.chlna6666.ranking.I18n;
 
-import com.chlna6666.ranking.Ranking;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -8,13 +7,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.logging.Level;
+import java.util.stream.Stream;
 
 public class I18n {
     private final JavaPlugin plugin;
     private FileConfiguration languageConfig;
-    private final String defaultLanguage = "en_US";
 
     public I18n(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -34,6 +35,7 @@ public class I18n {
     }
 
     private void loadLanguageFile() {
+        String defaultLanguage = "en_US";
         String language = plugin.getConfig().getString("language", defaultLanguage);
         File langFile = new File(plugin.getDataFolder(), "language/" + language + ".yml");
 
@@ -55,10 +57,10 @@ public class I18n {
     }
 
     public void copyDefaultLanguageFiles() {
-        copyResourceFolder("language");
+        copyResourceFolder();
     }
 
-    private void copyResourceFolder(String resourcePath) {
+    private void copyResourceFolder() {
         try {
             File jarFile = new File(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
             if (jarFile.isFile()) {
@@ -67,10 +69,12 @@ public class I18n {
                 while (entries.hasMoreElements()) {
                     java.util.jar.JarEntry entry = entries.nextElement();
                     String name = entry.getName();
-                    if (name.startsWith(resourcePath + "/")) {
+                    if (name.startsWith("language" + "/")) {
                         File f = new File(plugin.getDataFolder(), name);
                         if (entry.isDirectory()) {
-                            f.mkdirs();
+                            if (!f.mkdirs() && !f.isDirectory()) {
+                                plugin.getLogger().log(Level.SEVERE, "Failed to create directory: " + f.getAbsolutePath());
+                            }
                         } else {
                             try (InputStream is = jar.getInputStream(entry)) {
                                 Files.copy(is, f.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -80,21 +84,25 @@ public class I18n {
                 }
                 jar.close();
             } else { // Run with IDE
-                java.net.URL url = plugin.getClass().getClassLoader().getResource(resourcePath);
+                java.net.URL url = plugin.getClass().getClassLoader().getResource("language");
                 if (url != null) {
                     java.nio.file.Path srcPath = java.nio.file.Paths.get(url.toURI());
-                    java.nio.file.Path destPath = Paths.get(plugin.getDataFolder().toURI()).resolve(resourcePath);
-                    Files.walk(srcPath).forEach(src -> {
-                        try {
-                            Files.copy(src, destPath.resolve(srcPath.relativize(src)), StandardCopyOption.REPLACE_EXISTING);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+                    java.nio.file.Path destPath = Paths.get(plugin.getDataFolder().toURI()).resolve("language");
+                    try (Stream<Path> stream = Files.walk(srcPath)) {
+                        stream.forEach(src -> {
+                            try {
+                                Files.copy(src, destPath.resolve(srcPath.relativize(src)), StandardCopyOption.REPLACE_EXISTING);
+                            } catch (Exception e) {
+                                plugin.getLogger().log(Level.SEVERE, "Failed to copy file from source path to destination path.", e);
+                            }
+                        });
+                    }
+                } else {
+                    plugin.getLogger().log(Level.SEVERE, "Resource folder 'language' not found.");
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Failed to copy resource folder.", e);
         }
     }
 }

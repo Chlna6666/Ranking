@@ -22,7 +22,6 @@ import static org.bukkit.Bukkit.getServer;
 
 public class UpdateChecker {
     private final JavaPlugin plugin;
-    private final String apiUrl = "https://api.minebbs.com/api/openapi/v1/resources/7531";
     private final FileConfiguration config;
     private boolean warningSent = false;
     private String latestVersion;
@@ -47,6 +46,7 @@ public class UpdateChecker {
     // 核心的异步更新检查逻辑
     private void runUpdateCheckAsync(CommandSender sender) {
         try {
+            String apiUrl = "https://api.minebbs.com/api/openapi/v1/resources/7531";
             URL url = new URL(apiUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -82,7 +82,7 @@ public class UpdateChecker {
             }
 
         } catch (SocketException e) {
-            logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
+            plugin.getLogger().warning(((Ranking) plugin).getI18n().translate("update_checker.connection_reset"));
         } catch (Exception e) {
             plugin.getLogger().severe(((Ranking) plugin).getI18n().translate("update_checker.error_checking_updates") + ": " + e.getMessage());
         }
@@ -90,7 +90,8 @@ public class UpdateChecker {
 
     // 同步任务：处理版本检查结果并发送消息
     private void handleUpdateCheckResult(CommandSender sender) {
-        String currentVersion = plugin.getDescription().getVersion();
+        // 使用缓存的版本信息
+        String currentVersion = ((Ranking) plugin).getCurrentVersion();
         Component message;
 
         if (isVersionHigher(latestVersion, currentVersion)) {
@@ -103,17 +104,17 @@ public class UpdateChecker {
                     .append(Component.text(((Ranking) plugin).getI18n().translate("update_checker.latest_version_installed"), NamedTextColor.GREEN));
         } else {
             message = Component.text("[Ranking] ", NamedTextColor.GOLD)
-                    .append(Component.text(((Ranking) plugin).getI18n().translate("update_checker.beta_version_installed") + ": " + plugin.getDescription().getVersion(), NamedTextColor.RED))
+                    .append(Component.text(((Ranking) plugin).getI18n().translate("update_checker.beta_version_installed") + ": " + currentVersion, NamedTextColor.RED))
                     .append(Component.text("  " + ((Ranking) plugin).getI18n().translate("update_checker.backup_warning"), NamedTextColor.GOLD));
         }
 
-        // 发送消息给玩家或控制台
         if (sender instanceof Player) {
             sender.sendMessage(message);
         } else {
             Bukkit.getConsoleSender().sendMessage(message);
         }
     }
+
 
     // 比较版本号是否有更新
     private boolean isVersionHigher(String remoteVersion, String currentVersion) {
@@ -137,7 +138,7 @@ public class UpdateChecker {
     // 日志记录警告
     private void logWarning(String message) {
         if (!warningSent) {
-            Bukkit.getLogger().warning(((Ranking) plugin).getI18n().translate("update_checker.update_checker") + message);
+            plugin.getLogger().warning(((Ranking) plugin).getI18n().translate("update_checker.update_checker") + message);
             warningSent = true;
             // 在一分钟后重置标志位
             Bukkit.getScheduler().runTaskLater(plugin, () -> warningSent = false, 1200L); // 1200 ticks = 1 minute

@@ -10,7 +10,27 @@ update_checker:
   beta_version_installed: "You are using a beta version"
   backup_warning: "Please ensure you have backed up your data."
   update_checker: "Update Checker: "
-
+data:
+  use_mysql: "Using MySQL storage mode"
+  use_json: "Using JSON storage mode"
+  mysql:
+    config_missing: "Missing required MySQL config:"
+    load_failed: "Data loading failed: "
+    parse_failed: "JSON parsing failed: "
+    save_failed: "Failed to save data {dataType}, retrying..."
+    save_final_failed: "Final data save failed: "
+    create_table_error: "Database operation failed: "
+  json:
+    create_folder_failed: "Failed to create data directory: "
+    init_file: "Initial file created: "
+    create_file_failed: "Failed to create file: "
+    file_not_exist: "Attempted to load non-existent file: "
+    invalid_json: "Invalid JSON format:"
+    load_failed: "Load failed: "
+    unknown_type: "Unknown data type: "
+    null_path: "Cannot save to a null file path"
+    save_failed: "Save failed: "
+    shutdown_saving: "Saving all data..."
 papi:
   me: "(me)"
 command:

@@ -1,5 +1,6 @@
 package com.chlna6666.ranking.metrics;
 
+import com.chlna6666.ranking.Ranking;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -117,7 +118,7 @@ public class Metrics {
     }
 
     private void appendServiceData(JsonObjectBuilder builder) {
-        builder.appendField("pluginVersion", plugin.getDescription().getVersion());
+        builder.appendField("pluginVersion", ((Ranking) plugin).getCurrentVersion());
     }
 
     private int getPlayerAmount() {

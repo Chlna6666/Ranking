@@ -1,5 +1,6 @@
-package com.chlna6666.ranking;
+package com.chlna6666.ranking.command;
 
+import com.chlna6666.ranking.leaderboard.LeaderboardSettings;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;

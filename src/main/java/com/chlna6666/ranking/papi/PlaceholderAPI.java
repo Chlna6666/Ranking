@@ -1,22 +1,29 @@
-package com.chlna6666.ranking;
+package com.chlna6666.ranking.papi;
 
+import com.chlna6666.ranking.datamanager.DataManager;
 import com.chlna6666.ranking.I18n.I18n;
+import com.chlna6666.ranking.leaderboard.LeaderboardSettings;
+import com.chlna6666.ranking.Ranking;
+
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
-public class Papi extends PlaceholderExpansion {
+public class PlaceholderAPI extends PlaceholderExpansion {
+    private final Ranking plugin;
     private final DataManager dataManager;
     private final I18n i18n;
 
-    public Papi(Ranking pluginInstance, DataManager dataManager, I18n i18n) {
+    public PlaceholderAPI(Ranking plugin, DataManager dataManager, I18n i18n) {
         this.dataManager = dataManager;
         this.i18n = i18n;
+        this.plugin = plugin;
     }
 
     @Override
@@ -89,14 +96,13 @@ public class Papi extends PlaceholderExpansion {
     }
 
     private String getRankingEntryAsync(OfflinePlayer player, String params, JSONObject jsonData) {
-        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-            return getRankingEntry(player, params, jsonData);
-        });
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(() ->
+                getRankingEntry(player, params, jsonData));
 
         try {
             return future.get(); // 等待异步任务完成并返回结果
         } catch (Exception e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Error occurred while getting ranking entry", e);
             return null;
         }
     }

@@ -10,7 +10,27 @@ update_checker:
   beta_version_installed: "您使用的是测试版本"
   backup_warning: "请确保您已经备份了数据。"
   update_checker: "更新检查: "
-
+data:
+  use_mysql: "正在使用 MySql 存储模式"
+  use_json: "正在使用 JSON 存储模式"
+  mysql:
+    config_missing: "MySQL配置缺少必要参数: "
+    load_failed: "数据加载失败: "
+    parse_failed: "JSON解析失败: "
+    save_failed: "数据保存失败 {dataType}，尝试重试..."
+    save_final_failed: "数据最终保存失败: "
+    create_table_error: "数据库操作失败: "
+  json:
+    create_folder_failed: "无法创建数据目录: "
+    init_file: "已创建初始文件: "
+    create_file_failed: "无法创建文件: "
+    file_not_exist: "尝试加载不存在的文件: "
+    invalid_json: "无效的 JSON 格式: "
+    load_failed: "加载失败: "
+    unknown_type: "未知的数据类型: "
+    null_path: "无法保存到空文件路径"
+    save_failed: "保存失败: "
+    shutdown_saving: "正在保存所有数据..."
 papi:
   me: "(我)"
 command:

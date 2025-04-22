@@ -1,4 +1,4 @@
-package com.chlna6666.ranking;
+package com.chlna6666.ranking.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Set;
+import java.util.logging.Level;
 
 public class ConfigManager {
     private final JavaPlugin plugin;
@@ -40,11 +41,10 @@ public class ConfigManager {
                 defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultConfigStream));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Failed to load default config from 'config.yml'", e);
         }
         return defaultConfig;
     }
-
     private void mergeConfigs(FileConfiguration defaultConfig, FileConfiguration currentConfig) {
         if (defaultConfig == null) return;
 
@@ -60,7 +60,7 @@ public class ConfigManager {
         try {
             config.save(new File(plugin.getDataFolder(), "config.yml"));
         } catch (Exception e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Failed to save config to 'config.yml'", e);
         }
     }
 

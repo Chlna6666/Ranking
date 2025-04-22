@@ -1,4 +1,6 @@
-package com.chlna6666.ranking;
+package com.chlna6666.ranking.leaderboard;
+
+import com.chlna6666.ranking.config.ConfigManager;
 
 import java.util.HashMap;
 import java.util.Map;
