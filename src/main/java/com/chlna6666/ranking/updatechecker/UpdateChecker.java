@@ -55,7 +55,7 @@ public class UpdateChecker {
 
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_failed").replace("{code}", String.valueOf(responseCode)));
+             logWarning(((Ranking) plugin).getI18n().translate("update_checker.connection_failed", responseCode));
                 return;
             }
 

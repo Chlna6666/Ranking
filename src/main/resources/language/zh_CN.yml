@@ -1,7 +1,9 @@
 i18n:
-  loaded_language: "已加载语言文件: "
+  language_switched: "当前语言已切换为 {0}"
+  language_not_found: "找不到语言文件 {0}，使用默认语言 en_US"
+
 update_checker:
-  connection_failed: "连接更新服务器失败。响应代码: {code}"
+  connection_failed: "连接更新服务器失败。响应代码:  {0}"
   connection_reset: "连接重置。请检查您的网络连接。"
   new_version_found: "发现新版本"
   download_link: "下载链接"
@@ -17,7 +19,7 @@ data:
     config_missing: "MySQL配置缺少必要参数: "
     load_failed: "数据加载失败: "
     parse_failed: "JSON解析失败: "
-    save_failed: "数据保存失败 {dataType}，尝试重试..."
+    save_failed: "数据保存失败  {0}，尝试重试..."
     save_final_failed: "数据最终保存失败: "
     create_table_error: "数据库操作失败: "
   json:

@@ -39,6 +39,10 @@ commands:
         description: 开启和关闭排名显示
         usage: /ranking break_bedrock
         permission: ''
+      dynamic:
+        description: 开启和关闭排名显示
+        usage: /ranking dynamic
+        permission: ''
       all:
         description: 输出所有排行榜的全部数据
         usage: /ranking all

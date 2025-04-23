@@ -135,7 +135,7 @@ public class MySQLDataManager extends DataManager {
 
     // region 错误处理
     private void handleSaveError(String dataType, JSONObject data, SQLException e) {
-        plugin.getLogger().warning(i18n.translate("data.mysql.parse_failed").replace("{dataType}", String.valueOf(dataType)));
+        plugin.getLogger().warning(i18n.translate("data.mysql.save_failed", dataType));
 
         // 带指数退避的重试机制
         int maxRetries = 3;

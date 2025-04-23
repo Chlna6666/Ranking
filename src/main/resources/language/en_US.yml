@@ -1,7 +1,8 @@
 i18n:
-  loaded_language: "Language file loaded: "
+  language_switched: "Current language switched to {0}"
+  language_not_found: "Language file {0} not found, fallback to default en_US"
 update_checker:
-  connection_failed: "Connection to update server failed. Response code: {code}"
+  connection_failed: "Connection to update server failed. Response code:  {0}"
   connection_reset: "Connection reset. Please check your network connection."
   new_version_found: "New version found"
   download_link: "Download link"
@@ -17,7 +18,7 @@ data:
     config_missing: "Missing required MySQL config:"
     load_failed: "Data loading failed: "
     parse_failed: "JSON parsing failed: "
-    save_failed: "Failed to save data {dataType}, retrying..."
+    save_failed: "Failed to save data  {0}, retrying..."
     save_final_failed: "Final data save failed: "
     create_table_error: "Database operation failed: "
   json:
@@ -47,10 +48,10 @@ command:
   no_data: "No data"
   help:
     header: "§9§l=== §b§l[Ranking] §9§lHelp Menu ==="
-    all: "§b/ranking all §f- §7View all leaderboards"
-    my: "§b/ranking my §f- §7View your personal rankings"
-    list: "§b/ranking list <ranking_name> §f- §7View a specific leaderboard"
-    help: "§b/ranking help §f- §7Display this help menu"
+    all: "View all leaderboards"
+    my: "View your personal rankings"
+    list: "View a specific leaderboard"
+    help: "Display this help menu"
     place: "View Place Board"
     destroys: "View Destroys Board"
     deads: "View Deads Board"
