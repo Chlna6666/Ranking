@@ -1,9 +1,12 @@
 package com.chlna6666.ranking.scoreboard;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +43,28 @@ public class ScoreboardUtils {
             uuidToNameMap.put(dataType, new HashMap<>());
         }
         return uuidToNameMap.get(dataType);
+    }
+
+    public static void clearScoreboard(Player player) {
+        // 1. 获取 Bukkit 提供的 ScoreboardManager
+        ScoreboardManager mgr = Bukkit.getScoreboardManager();
+        if (mgr == null) return;
+
+        // 2. 创建一份全新的、绝对空白的 Scoreboard
+        Scoreboard emptyBoard = mgr.getNewScoreboard();
+
+        // 3. 先给玩家切上这份空白板子
+        player.setScoreboard(emptyBoard);
+
+        // 4. 然后再遍历注销一遍（通常不会有任何 Objective，但以防万一）
+        for (Objective obj : new ArrayList<>(emptyBoard.getObjectives())) {
+            try {
+                obj.unregister();
+            } catch (Exception e) {
+                Bukkit.getLogger().warning("无法注销 Objective: "
+                        + obj.getName() + "，原因: " + e.getMessage());
+            }
+        }
     }
 
 }

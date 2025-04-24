@@ -70,7 +70,7 @@ public class RankingCommand implements CommandExecutor {
                 rankingDisplay.displayHelpMessage(player);
                 break;
             case "dynamic":
-                scoreboardManager.dynamicScoreboard(player, "dynamic", i18n.translate("sidebar.dynamic"), dataManager.getPlayersData());
+                scoreboardManager.dynamicScoreboard(player,dataManager.getPlayersData());
                 break;
             default:
                 player.sendMessage(i18n.translate("command.unknown_command"));

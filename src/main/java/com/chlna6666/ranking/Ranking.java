@@ -282,20 +282,6 @@ public class Ranking extends JavaPlugin {
         }
     }
 
-    /**
-     * 清除指定玩家的所有计分板目标
-     */
-    public void clearScoreboard(Player player) {
-        Scoreboard scoreboard = player.getScoreboard();
-        for (Objective objective : new ArrayList<>(scoreboard.getObjectives())) {
-            try {
-                objective.unregister();
-            } catch (Exception e) {
-                getLogger().warning("无法注销目标: " + objective.getName() + ". 错误: " + e.getMessage());
-            }
-        }
-    }
-
 
     public DataManager getDataManager() {
         return dataManager;

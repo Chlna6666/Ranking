@@ -1,6 +1,7 @@
 package com.chlna6666.ranking.listener;
 
 import com.chlna6666.ranking.Ranking;
+import com.chlna6666.ranking.scoreboard.ScoreboardUtils;
 import com.chlna6666.ranking.statistics.OnlineTime;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -45,7 +46,7 @@ public class PlayerJoinListener implements Listener {
             }
         }
 
-        plugin.clearScoreboard(player);
+        ScoreboardUtils.clearScoreboard(player);
         plugin.updatePlayerScoreboards(uuid);
 
         onlineTime.cancelOnlineTimeTask(uuid);
