@@ -65,5 +65,7 @@ sidebar:
   kill: "Mob Die"
   online_time: "Online Time"
   break_bedrock: "Break Bedrock"
+  dynamic: "Dynamic Display"
+
 warning:
   cannot_get_main_command: "Unable to obtain /ranking main command!"

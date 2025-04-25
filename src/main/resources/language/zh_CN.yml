@@ -67,5 +67,6 @@ sidebar:
   kill: "击杀榜"
   online_time: "在线时长榜"
   break_bedrock: "破基岩榜"
+  dynamic: "动态显示"
 warning:
   cannot_get_main_command: "无法获取 /ranking 主命令！"

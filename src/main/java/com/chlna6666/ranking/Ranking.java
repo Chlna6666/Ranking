@@ -111,6 +111,7 @@ public class Ranking extends JavaPlugin {
 
         pluginManager.registerEvents(new BlockBreakListener(this), this);
         pluginManager.registerEvents(blockPlaceListener, this);
+        pluginManager.registerEvents(new PlayerDeathListener(this), this);
         pluginManager.registerEvents(new EntityDeathListener(this), this);
         pluginManager.registerEvents(new BlockPistonRetractListener(this, blockPlaceListener), this);
         pluginManager.registerEvents(new PlayerJoinListener(this, onlineTime), this);

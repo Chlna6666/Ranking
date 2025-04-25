@@ -11,6 +11,10 @@ update_checker:
   enabled: true   # 是否启用更新检查器
   notify_on_login: true   # 管理员登录时是否提醒更新
 
+# 动态记分板轮换间隔（单位：分钟）
+dynamic:
+  rotation_interval_minutes: 5
+
 # 排行榜开关设置
 leaderboards:
   place: true   # 是否启用放置榜
