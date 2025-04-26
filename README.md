@@ -1,4 +1,5 @@
 # Ranking
+![图片](https://bstats.org/signatures/bukkit/Ranking.svg)
 
 这是一个 Minecraft 服务器排行榜插件，根据玩家的统计数据（如放置方块数量、破坏方块数量、死亡次数、击杀数量和在线时长等）生成排行榜，并在游戏中显示。
 
@@ -26,20 +27,36 @@ update_checker:
   enabled: true   # 是否启用更新检查器
   notify_on_login: true   # 管理员登录时是否提醒更新
 
-# 排行榜开关设置(todo 暂时不支持)
+# 动态记分板轮换间隔（单位：分钟）
+dynamic:
+  rotation_interval_minutes: 5
+
+# 排行榜开关设置
 leaderboards:
   place: true   # 是否启用放置榜
   destroys: true   # 是否启用挖掘榜
   deads: true   # 是否启用死亡榜
   mobdie: true   # 是否启用击杀榜
   onlinetime: true   # 是否启用在线时长榜
+  break_bedrock: true
 
 # 数据存储方式设置
 data_storage:
-  method: json   # 数据存储方式，可选值: json (JSON 文件)
-  location: /plugins/Ranking/data   # 数据存储位置，仅在选择 json 存储方式时有效
+  method: json   # 数据存储方式，可选值: mysql (MySQL 数据库), json (JSON 文件)
+
+  # MySQL 配置
+  mysql:
+    host: localhost        # 数据库地址
+    port: 3306             # 数据库端口
+    username: your_username  # 数据库用户名
+    password: your_password  # 数据库密码
+    database: ranking_database  # 数据库名称
+    table_prefix: ranking_      # 表前缀，可选项
+
+  location: /plugins/Ranking/data   # 仅在使用 json 存储方式时有效
   save_delay: 100  # 保存延迟，单位为ticks (1 tick = 50 ms)
   regular_save_interval: 1200  # 定期保存间隔，单位为ticks (1 tick = 50 ms)
+
 
 ```
 
@@ -59,7 +76,11 @@ data_storage:
     - `deads`: 查看死亡榜排行榜。
     - `mobdie`: 查看击杀榜排行榜。
     - `onlinetime`: 查看在线时长榜排行榜。
+    - `dynamic`: 切换动态显示排行榜。
     - `help`: 查看帮助信息。
+    - `all`: 查看全部排行榜信息。
+    - `my`: 查看自己的排行榜信息。
+    - `list <子命令>`:查看对应的排行榜信息。
 # PAPI
 ![图片](docs/img/papi.png)
 
