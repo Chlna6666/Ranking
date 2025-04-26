@@ -30,8 +30,7 @@ public class ScoreboardManager {
      * 切换并执行动态记分板逻辑
      */
     public void dynamicScoreboard(Player player) {
-        JSONObject playersData = dataManager.getPlayersData();
-        dynamicHandler.toggle(player, playersData);
+        dynamicHandler.toggle(player);
     }
     /**
      * 切换静态榜单显示/隐藏

@@ -14,6 +14,7 @@ import com.chlna6666.ranking.statistics.OnlineTime;
 import com.chlna6666.ranking.updatechecker.UpdateChecker;
 import com.chlna6666.ranking.metrics.Metrics;
 import com.chlna6666.ranking.scoreboard.ScoreboardUtils;
+import com.chlna6666.ranking.scoreboard.DynamicScoreboard;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -98,6 +99,7 @@ public class Ranking extends JavaPlugin {
     @Override
     public void onDisable() {
         OnlineTime.shutdownScheduler();
+        DynamicScoreboard.shutdown();
         dataManager.saveAllData();
         dataManager.shutdownDataManager();
     }
