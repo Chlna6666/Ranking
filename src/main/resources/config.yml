@@ -23,6 +23,7 @@ leaderboards:
   mobdie: true   # 是否启用击杀榜
   onlinetime: true   # 是否启用在线时长榜
   break_bedrock: true
+  top_n: 10    # 设置显示玩家人数
 
 # 数据存储方式设置
 data_storage:

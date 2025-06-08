@@ -30,6 +30,7 @@ import org.json.simple.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.chlna6666.ranking.utils.Utils.isFolia;
 
@@ -42,7 +43,7 @@ public class Ranking extends JavaPlugin {
     private UpdateChecker updateChecker;
 
     private String currentVersion;
-
+    private int leaderboardTopN; // 排行榜人数
 
     private long SAVE_DELAY_TICKS;
     private long REGULAR_SAVE_INTERVAL_TICKS;
@@ -71,6 +72,7 @@ public class Ranking extends JavaPlugin {
         } else {
             dataManager = new JsonDataManager(this);
         }
+
         leaderboardSettings = LeaderboardSettings.getInstance();
         leaderboardSettings.loadSettings(configManager);
         logPluginInfo();
@@ -125,6 +127,8 @@ public class Ranking extends JavaPlugin {
         FileConfiguration config = configManager.getConfig();
         SAVE_DELAY_TICKS = config.getLong("data_storage.save_delay");
         REGULAR_SAVE_INTERVAL_TICKS = config.getLong("data_storage.regular_save_interval");
+        leaderboardTopN = config.getInt("leaderboards.top_n", 10);
+
     }
 
     private void logPluginInfo() {
@@ -214,76 +218,94 @@ public class Ranking extends JavaPlugin {
      * 更新计分板数据
      */
     public void updateScoreboards(String sidebarTitle, Map<String, Long> data, String dataType) {
-        Scoreboard scoreboard = ScoreboardUtils.getOrCreateScoreboard(dataType);
-        Map<String, String> uuidToNameMap = ScoreboardUtils.getOrCreateUUIDMap(dataType);
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            int topN = leaderboardTopN;
+            JSONObject playersData = dataManager.getPlayersData();
 
-        // 创建/更新计分项
-        Component title = LegacyComponentSerializer.legacyAmpersand().deserialize(sidebarTitle);
-        Objective objective = scoreboard.getObjective("Ranking_" + dataType);
-        if (objective == null) {
-            objective = scoreboard.registerNewObjective(
-                    "Ranking_" + dataType,
-                    Criteria.DUMMY,
-                    title
-            );
-            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        } else if (!objective.displayName().equals(title)) {
-            objective.displayName(title);
-        }
+            // 1. 排序 TopN
+            List<Map.Entry<String, Long>> topEntries = data.entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue(Comparator.reverseOrder()))
+                    .limit(topN)
+                    .collect(Collectors.toList());
 
-        Set<String> validNames = new HashSet<>();
-        JSONObject playersData = dataManager.getPlayersData();
+            // 2. 构建 UUID -> Name 和 Name -> Score 映射
+            Map<String, String> uuidToName = new HashMap<>();
+            Map<String, Integer> nameToScore = new HashMap<>();
+            Set<String> validNames = new HashSet<>();
 
-        // 更新各个玩家的分数
-        for (Map.Entry<String, Long> entry : data.entrySet()) {
-            String uuid = entry.getKey();
-            long scoreValue = entry.getValue();
-            String currentName = "Unknown";
-            if (playersData.containsKey(uuid)) {
-                JSONObject playerData = (JSONObject) playersData.get(uuid);
-                currentName = (String) playerData.getOrDefault("name", "Unknown");
+            for (Map.Entry<String, Long> entry : topEntries) {
+                String uuid = entry.getKey();
+                long scoreVal = entry.getValue();
+
+                String playerName = "Unknown";
+                if (playersData.containsKey(uuid)) {
+                    JSONObject pdata = (JSONObject) playersData.get(uuid);
+                    playerName = (String) pdata.getOrDefault("name", "Unknown");
+                }
+
+                uuidToName.put(uuid, playerName);
+                nameToScore.put(playerName, (int) scoreVal);
+                validNames.add(playerName);
             }
-            validNames.add(currentName);
 
-            String storedName = uuidToNameMap.get(uuid);
-            if (storedName != null && !storedName.equals(currentName)) {
-                scoreboard.resetScores(storedName);
-            }
-            uuidToNameMap.put(uuid, currentName);
-            Score score = objective.getScore(currentName);
-            if (score.getScore() != (int) scoreValue) {
-                score.setScore((int) scoreValue);
-            }
-        }
+            // 3. 回到主线程安全更新 Scoreboard
+            Bukkit.getScheduler().runTask(this, () -> {
+                Scoreboard scoreboard = ScoreboardUtils.getOrCreateScoreboard(dataType);
+                Map<String, String> existingUUIDMap = ScoreboardUtils.getOrCreateUUIDMap(dataType);
+                Component title = LegacyComponentSerializer.legacyAmpersand().deserialize(sidebarTitle);
+                Objective objective = scoreboard.getObjective("Ranking_" + dataType);
 
-        // 清理无效的名称
-        uuidToNameMap.entrySet().removeIf(entry -> {
-            if (!data.containsKey(entry.getKey())) {
-                scoreboard.resetScores(entry.getValue());
-                return true;
-            }
-            return false;
+                if (objective == null) {
+                    objective = scoreboard.registerNewObjective("Ranking_" + dataType, Criteria.DUMMY, title);
+                    objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+                } else if (!objective.displayName().equals(title)) {
+                    objective.displayName(title);
+                }
+
+                // 更新得分
+                for (Map.Entry<String, Integer> entry : nameToScore.entrySet()) {
+                    String name = entry.getKey();
+                    int newScore = entry.getValue();
+                    Score score = objective.getScore(name);
+                    if (score.getScore() != newScore) {
+                        score.setScore(newScore);
+                    }
+                }
+
+                // 清理旧的 uuid->name 映射
+                existingUUIDMap.entrySet().removeIf(entry -> {
+                    if (!uuidToName.containsKey(entry.getKey())) {
+                        scoreboard.resetScores(entry.getValue());
+                        return true;
+                    }
+                    return false;
+                });
+
+                // 清理不再在榜单中的 name
+                for (String entryName : scoreboard.getEntries()) {
+                    if (!validNames.contains(entryName)) {
+                        scoreboard.resetScores(entryName);
+                    }
+                }
+
+                // 显示给符合条件的在线玩家
+                Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    JSONObject pdata = (JSONObject) playersData.getOrDefault(p.getUniqueId().toString(), new JSONObject());
+                    boolean shouldShow = ((Number) pdata.getOrDefault(dataType, 0)).intValue() == 1;
+                    if (shouldShow && !p.getScoreboard().equals(scoreboard)) {
+                        p.setScoreboard(scoreboard);
+                    } else if (!shouldShow && p.getScoreboard().equals(scoreboard)) {
+                        p.setScoreboard(mainScoreboard);
+                    }
+                }
+
+                // 更新最终 UUID 映射
+                uuidToName.forEach(existingUUIDMap::put);
+            });
         });
-
-        // 清理其他残留条目
-        for (String entry : scoreboard.getEntries()) {
-            if (objective.getScore(entry).isScoreSet() && !validNames.contains(entry)) {
-                scoreboard.resetScores(entry);
-            }
-        }
-
-        // 更新在线玩家的显示计分板
-        Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            JSONObject playerData = (JSONObject) playersData.getOrDefault(p.getUniqueId().toString(), new JSONObject());
-            boolean shouldShow = ((Number) playerData.getOrDefault(dataType, 0)).intValue() == 1;
-            if (shouldShow && !p.getScoreboard().equals(scoreboard)) {
-                p.setScoreboard(scoreboard);
-            } else if (!shouldShow && p.getScoreboard().equals(scoreboard)) {
-                p.setScoreboard(mainScoreboard);
-            }
-        }
     }
+
 
 
     public DataManager getDataManager() {
