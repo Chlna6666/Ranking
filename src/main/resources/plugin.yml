@@ -59,3 +59,12 @@ commands:
         description: 帮助
         usage: /ranking help
         permission: ''
+      reset:
+        description: 重置排行榜（仅管理员或控制台）
+        usage: /ranking reset <排行榜类型|all>
+        permission: ranking.reset
+
+permissions:
+  ranking.reset:
+    description: 允许玩家使用 /ranking reset
+    default: op

@@ -223,6 +223,22 @@ public class MySQLDataManager extends DataManager {
     public JSONObject getBreakBedrockData() {
         return dataCache.getOrDefault("break_bedrock", new JSONObject());
     }
+
+    @Override
+    public void resetLeaderboard(String type) {
+        JSONObject empty = new JSONObject();
+        dataCache.put(type, empty); // 更新缓存
+        saveData(type, empty); // 异步保存
+    }
+
+    @Override
+    public void resetAll() {
+        for (String type : SUPPORTED_TYPES) {
+            resetLeaderboard(type);
+        }
+    }
+
+
     // endregion
     @Override
     protected void loadFiles() {

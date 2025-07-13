@@ -35,6 +35,10 @@ data:
 papi:
   me: "(me)"
 command:
+  reset_all_success: "Successfully reset all leaderboards!"
+  reset_one_success: "Successfully reset {0} leaderboard!"
+  usage_reset: "§cUsage: /ranking reset <leaderboard type|all>"
+  no_permission: "§cYou do not have permission to perform this action."
   only_players: "Only players can execute this command!"
   usage_ranking: "Usage: /ranking <subcommand>"
   enabled: "enabled!"

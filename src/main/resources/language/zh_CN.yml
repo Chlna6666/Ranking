@@ -36,6 +36,10 @@ data:
 papi:
   me: "(我)"
 command:
+  reset_all_success: "已成功重置所有排行榜！"
+  reset_one_success: "已成功重置 {0} 排行榜！"
+  usage_reset: "§c用法: /ranking reset <排行榜类型|all>"
+  no_permission: "§c你没有权限执行此操作。"
   only_players: "只有玩家可以执行此命令！"
   usage_ranking: "使用方法: /ranking <子命令>"
   enabled: "已开启！"

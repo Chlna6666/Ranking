@@ -170,4 +170,31 @@ public class JsonDataManager extends DataManager {
         plugin.getLogger().info(i18n.translate("data.json.shutdown_saving"));
         saveAllData();
     }
+
+    @Override
+    public void resetLeaderboard(String type) {
+        JSONObject empty = new JSONObject();
+        switch (type.toLowerCase()) {
+            case "place" -> placeData = empty;
+            case "destroys" -> destroysData = empty;
+            case "deads" -> deadsData = empty;
+            case "mobdie" -> mobdieData = empty;
+            case "onlinetime" -> onlinetimeData = empty;
+            case "break_bedrock" -> breakBedrockData = empty;
+            default -> {
+                plugin.getLogger().warning(i18n.translate("data.json.unknown_type") + type);
+                return;
+            }
+        }
+        saveData(type, empty);
+    }
+
+    @Override
+    public void resetAll() {
+        for (String type : SUPPORTED_TYPES) {
+            resetLeaderboard(type);
+        }
+    }
+
+
 }
