@@ -105,8 +105,8 @@ public class DynamicScoreboard {
     }
 
     private boolean isFlagSet(JSONObject pdata, String key) {
-        return pdata != null && pdata.getOrDefault(key, 0L) instanceof Number
-                && ((Number) pdata.get(key)).intValue() == 1;
+        Object value = pdata != null ? pdata.getOrDefault(key, 0L) : 0L;
+        return value instanceof Number && ((Number) value).intValue() == 1;
     }
 
     private void resetFlags(JSONObject pdata, List<String> keys) {
