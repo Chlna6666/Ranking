@@ -14,10 +14,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-
-/**
- * 独立的动态记分板管理器——使用 Java ScheduledExecutorService 全局定时轮询
- */
 public class DynamicScoreboard {
     private final Ranking plugin;
     private final DataManager dataManager;
@@ -31,10 +27,15 @@ public class DynamicScoreboard {
         this.dataManager = dataManager;
         this.i18n = i18n;
         long interval = plugin.getConfig().getLong("dynamic.rotation_interval_minutes", 5L);
-        scheduler.scheduleAtFixedRate(() -> Bukkit.getScheduler()
-                        .runTask(plugin, this::tickAll),
-                0L, interval, TimeUnit.MINUTES
-        );
+
+        // 调度轮询
+        scheduler.scheduleAtFixedRate(() -> {
+            if (Utils.isFolia()) {
+                Bukkit.getGlobalRegionScheduler().run(plugin, t -> tickAll());
+            } else {
+                Bukkit.getScheduler().runTask(plugin, this::tickAll);
+            }
+        }, 0L, interval, TimeUnit.MINUTES);
     }
 
     public static void shutdown() {
@@ -53,17 +54,17 @@ public class DynamicScoreboard {
 
         if (enabled) {
             playerIndexes.put(player.getUniqueId(), 0);
+            resetFlags(pdata, allKeys); // 关闭其他静态
+
             List<String> enabledKeys = getEnabledKeys();
             if (!enabledKeys.isEmpty()) {
-                resetFlags(pdata, enabledKeys);
-                pdata.put(enabledKeys.get(0), 1L);
-                dataManager.saveData("data", dataManager.getPlayersData());
                 updateFor(player, enabledKeys.get(0));
             }
         } else {
             playerIndexes.remove(player.getUniqueId());
             resetFlags(pdata, allKeys);
-            ScoreboardUtils.clearScoreboard(player);
+            // 移除计分板
+            plugin.getScoreboardManager().removeBoard(player);
         }
     }
 
@@ -75,14 +76,14 @@ public class DynamicScoreboard {
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
             JSONObject pdata = (JSONObject) allData.get(uuid.toString());
+            // 检查 dynamic 开关
             if (!isFlagSet(pdata, "dynamic")) continue;
 
             int idx = playerIndexes.getOrDefault(uuid, 0);
-            resetFlags(pdata, enabledKeys);
             String key = enabledKeys.get(idx);
-            pdata.put(key, 1L);
-            dataManager.saveData("data", allData);
+
             updateFor(player, key);
+
             playerIndexes.put(uuid, (idx + 1) % enabledKeys.size());
         }
     }
@@ -114,19 +115,12 @@ public class DynamicScoreboard {
     }
 
     private void updateFor(Player player, String key) {
-        if (Utils.isFolia()) {
-            Bukkit.getRegionScheduler()
-                    .run(plugin, player.getLocation(), __ -> render(player, key));
-        } else {
-            render(player, key);
-        }
-    }
-
-    private void render(Player player, String key) {
         String title = ScoreboardUtils.getTitle(i18n, key);
         JSONObject data = ScoreboardUtils.getData(dataManager, key);
-        plugin.updateScoreboards(title, data, key);
+        // 注意：这里默认取前10名，你也可以从config读取 top_n
+        List<String> lines = ScoreboardUtils.formatLines(data, dataManager.getPlayersData(), 10);
+
+        // 更新
+        plugin.getScoreboardManager().updateBoard(player, title, lines);
     }
-
-
 }

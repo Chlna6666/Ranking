@@ -24,10 +24,13 @@ public class PlayerQuitListener implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        // 取消在线时间任务
         onlineTime.cancelOnlineTimeTask(uuid);
 
-        // plugin.clearPlayerRankingObjective(player);
+        // 移除 FastBoard 实例
+        if (plugin.getScoreboardManager() != null) {
+            plugin.getScoreboardManager().removeBoard(player);
+        }
+
         plugin.getDataManager().saveAllData();
     }
 }

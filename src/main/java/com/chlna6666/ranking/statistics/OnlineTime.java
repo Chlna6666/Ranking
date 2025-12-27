@@ -2,9 +2,9 @@ package com.chlna6666.ranking.statistics;
 
 import com.chlna6666.ranking.Ranking;
 import com.chlna6666.ranking.datamanager.DataManager;
+import com.chlna6666.ranking.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Map;
 import java.util.UUID;
@@ -59,14 +59,15 @@ public class OnlineTime {
                 // 获取玩家对象
                 Player player = playerCache.computeIfAbsent(uuid, Bukkit::getPlayer);
                 if (player != null && player.isOnline()) {
-                    // 主线程更新计分板
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            plugin.handleEvent(player, "onlinetime", plugin.getDataManager().getOnlinetimeData(),
-                                    plugin.getI18n().translate("sidebar.online_time"));
-                        }
-                    }.runTask(plugin);
+                    Runnable updateTask = () -> plugin.handleEvent(player, "onlinetime",
+                            plugin.getDataManager().getOnlinetimeData(),
+                            plugin.getI18n().translate("sidebar.online_time"));
+
+                    if (Utils.isFolia()) {
+                        Bukkit.getGlobalRegionScheduler().run(plugin, task -> updateTask.run());
+                    } else {
+                        plugin.getServer().getScheduler().runTask(plugin, updateTask);
+                    }
                 }
             });
         };

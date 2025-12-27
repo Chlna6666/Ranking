@@ -1,7 +1,6 @@
 package com.chlna6666.ranking.listener;
 
 import com.chlna6666.ranking.Ranking;
-import com.chlna6666.ranking.scoreboard.ScoreboardUtils;
 import com.chlna6666.ranking.statistics.OnlineTime;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,9 +26,12 @@ public class PlayerJoinListener implements Listener {
         UUID uuid = player.getUniqueId();
         String playerName = player.getName();
 
+        // 1. 检查更新通知
         if (player.hasPermission("ranking.update.notify") && plugin.getConfig().getBoolean("update_checker.notify_on_login")) {
             plugin.getUpdateChecker().checkForUpdates(player);
         }
+
+        // 2. 初始化或更新玩家数据（名字变更等）
         JSONObject playersData = plugin.getDataManager().getPlayersData();
 
         if (!playersData.containsKey(uuid.toString())) {
@@ -46,9 +48,16 @@ public class PlayerJoinListener implements Listener {
             }
         }
 
-        ScoreboardUtils.clearScoreboard(player);
+        // 3. 计分板处理 (FastBoard 适配)
+        // 确保加入时移除旧的板子（如果有残留）
+        if (plugin.getScoreboardManager() != null) {
+            plugin.getScoreboardManager().removeBoard(player);
+        }
+
+        // 恢复玩家之前的计分板状态 (如果玩家退出前是开启状态)
         plugin.updatePlayerScoreboards(uuid);
 
+        // 4. 在线时间统计处理
         onlineTime.cancelOnlineTimeTask(uuid);
 
         // 如果启用在线时间计时，则创建并调度任务

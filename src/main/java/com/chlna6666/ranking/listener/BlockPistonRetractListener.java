@@ -1,6 +1,7 @@
 package com.chlna6666.ranking.listener;
 
 import com.chlna6666.ranking.Ranking;
+import com.chlna6666.ranking.utils.Utils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,7 +14,6 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class BlockPistonRetractListener implements Listener {
 
@@ -27,10 +27,10 @@ public class BlockPistonRetractListener implements Listener {
 
     @EventHandler
     public void onBlockPistonRetract(BlockPistonRetractEvent event) {
-        CompletableFuture.runAsync(() -> {
-            if (plugin.getLeaderboardSettings().isLeaderboardEnabled("break_bedrock")) {
-                Block piston = event.getBlock();
-                Directional directional = (Directional) piston.getBlockData();
+        // 删除 CompletableFuture.runAsync
+        if (plugin.getLeaderboardSettings().isLeaderboardEnabled("break_bedrock")) {
+            Block piston = event.getBlock();
+            if (piston.getBlockData() instanceof Directional directional) {
                 BlockFace pistonFacing = directional.getFacing();
                 Location bedrockPos = piston.getRelative(pistonFacing).getLocation();
 
@@ -40,16 +40,18 @@ public class BlockPistonRetractListener implements Listener {
                     if (world.getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
                         Player player = cache.remove(bedrockPos);
                         if (player != null) {
-                            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                                plugin.handleEvent(player, "break_bedrock", plugin.getDataManager().getBreakBedrockData(),
-                                        plugin.getI18n().translate("sidebar.break_bedrock"));
-                                //getLogger().info("基岩被活塞收缩事件破坏，由 " + player.getName() + " 触发，位置：" + bedrockPos);
-                            });
+                            Runnable task = () -> plugin.handleEvent(player, "break_bedrock", plugin.getDataManager().getBreakBedrockData(),
+                                    plugin.getI18n().translate("sidebar.break_bedrock"));
+
+                            if (Utils.isFolia()) {
+                                plugin.getServer().getGlobalRegionScheduler().run(plugin, t -> task.run());
+                            } else {
+                                task.run();
+                            }
                         }
                     }
                 }
             }
-
-        });
+        }
     }
 }
