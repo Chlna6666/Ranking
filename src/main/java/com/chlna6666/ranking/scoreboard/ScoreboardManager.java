@@ -33,17 +33,22 @@ public class ScoreboardManager {
      * 切换静态榜单显示/隐藏
      */
     public void toggleScoreboard(Player player, String type) {
+        // 先更新状态
+        updateScoreboardStatus(player, type);
+
+        // 然后获取标题和数据
         String title = ScoreboardUtils.getTitle(i18n, type);
         JSONObject data = ScoreboardUtils.getData(dataManager, type);
-        updateScoreboardStatus(player, type);
+
+        // 检查更新后的状态
         if (isScoreboardEnabledFor(player)) {
             // 显示榜单
             ScoreboardUtils.clearScoreboard(player);
-            player.sendMessage(title + i18n.translate("command.enabled"));
+            player.sendMessage(title + " " + i18n.translate("command.enabled"));
             runUpdate(player, title, data, type);
         } else {
             // 隐藏榜单
-            player.sendMessage(title + i18n.translate("command.disabled"));
+            player.sendMessage(title + " " + i18n.translate("command.disabled"));
             ScoreboardUtils.clearScoreboard(player);
         }
     }
@@ -113,19 +118,26 @@ public class ScoreboardManager {
         }
     }
 
-    // 更新数据库中玩家的开启状态
+    // 更新数据库中玩家的开启状态 (Bug修复版)
     private void updateScoreboardStatus(Player player, String type) {
         JSONObject playersData = dataManager.getPlayersData();
         JSONObject playerData = (JSONObject) playersData.get(player.getUniqueId().toString());
         if (playerData == null) return;
-        // 关闭其他
+
+        // 1. 先记录当前状态
+        Object currentVal = playerData.getOrDefault(type, 0L);
+        boolean wasEnabled = (currentVal instanceof Number && ((Number) currentVal).intValue() == 1);
+
+        // 2. 将所有榜单状态重置为关闭
         for (String key : DataManager.SUPPORTED_TYPES) {
             playerData.put(key, 0L);
         }
-        // 切换当前
-        Object current = playerData.getOrDefault(type, 0L);
-        int newStatus = (current instanceof Number && ((Number) current).intValue() == 1) ? 0 : 1;
-        playerData.put(type, (long) newStatus);
+
+        // 3. 如果之前是关闭的，才开启它；如果之前是开启的，上面循环已经把它关了，正好实现 toggle 效果
+        if (!wasEnabled) {
+            playerData.put(type, 1L);
+        }
+
         dataManager.saveData("data", playersData);
     }
 
