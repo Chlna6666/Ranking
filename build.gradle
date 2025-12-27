@@ -6,6 +6,10 @@ plugins {
 group 'com.chlna6666'
 version '1.6.1'
 
+base {
+    archivesName = "Ranking"
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -25,6 +29,7 @@ repositories {
         url = "https://oss.sonatype.org/content/repositories/snapshots/"
     }
 }
+
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT"
     compileOnly "me.clip:placeholderapi:2.11.5"
@@ -49,15 +54,27 @@ tasks.withType(JavaCompile).configureEach {
     }
 }
 
-// Configure shadowJar
+def devServerPluginsDir = "C:\\Users\\Administrator\\Desktop\\leaves\\plugins\\"
+
 tasks.named('shadowJar') {
-    archiveClassifier.set("") // Removes the "-all" suffix
+    archiveClassifier.set("")
     mergeServiceFiles()
     minimize()
+    doLast {
+        def targetDir = new File(devServerPluginsDir)
+        if (targetDir.exists()) {
+            copy {
+                from archiveFile
+                into targetDir
+                rename { String fileName -> "Ranking.jar" }
+            }
+            println "✅ [本地开发] 插件已成功复制到测试服务器: ${devServerPluginsDir} (重命名为 Ranking.jar)"
+        } else {
+            println "ℹ️ [CI/构建] 检测到目标目录不存在，已跳过自动复制插件。"
+        }
+    }
 }
 
-
-// Use shadowJar to create the final plugin jar
 processResources {
     def props = [version: version]
     inputs.properties props
@@ -67,7 +84,6 @@ processResources {
     }
 }
 
-// Make the shadowJar task depend on the processResources task
 tasks.named('shadowJar') {
     dependsOn processResources
 }
