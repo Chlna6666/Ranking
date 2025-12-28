@@ -1,11 +1,12 @@
 package com.chlna6666.ranking.command;
 
 import com.chlna6666.ranking.datamanager.DataManager;
+import com.chlna6666.ranking.enums.LeaderboardType;
 import com.chlna6666.ranking.I18n.I18n;
 import com.chlna6666.ranking.leaderboard.LeaderboardSettings;
 import com.chlna6666.ranking.Ranking;
 import com.chlna6666.ranking.display.RankingDisplay;
-import com.chlna6666.ranking.scoreboard.ScoreboardManager;
+import com.chlna6666.ranking.manager.RankingManager;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -16,20 +17,16 @@ import org.jetbrains.annotations.NotNull;
 public class RankingCommand implements CommandExecutor {
     private final DataManager dataManager;
     private final I18n i18n;
-    private final LeaderboardSettings leaderboardSettings;
-    private final ScoreboardManager scoreboardManager;
+    private final LeaderboardSettings settings;
+    private final RankingManager rankingManager;
     private final RankingDisplay rankingDisplay;
 
-    public RankingCommand(Ranking plugin, DataManager dataManager, I18n i18n) {
+    public RankingCommand(Ranking plugin, DataManager dataManager, I18n i18n, RankingManager rankingManager) {
         this.dataManager = dataManager;
         this.i18n = i18n;
-        BukkitAudiences adventure = BukkitAudiences.create(plugin);
-        this.leaderboardSettings = LeaderboardSettings.getInstance();
-
-        // 关键修改：获取单例
-        this.scoreboardManager = plugin.getScoreboardManager();
-
-        this.rankingDisplay = new RankingDisplay(dataManager, i18n, adventure);
+        this.settings = LeaderboardSettings.getInstance();
+        this.rankingManager = rankingManager;
+        this.rankingDisplay = new RankingDisplay(dataManager, i18n, BukkitAudiences.create(plugin));
     }
 
     @Override
@@ -39,33 +36,29 @@ public class RankingCommand implements CommandExecutor {
             return true;
         }
 
-        if (args[0].equalsIgnoreCase("reset")) {
-            boolean hasPermission = !(sender instanceof Player) || sender.isOp() || sender.hasPermission("ranking.reset");
+        String sub = args[0].toLowerCase();
 
-            if (!hasPermission) {
-                sender.sendMessage(i18n.translate("command.no_permission"));
-                return true;
-            }
-
+        // 1. 处理 Reset
+        if (sub.equals("reset")) {
+            if (!checkPerm(sender)) return true;
             if (args.length < 2) {
                 sender.sendMessage(i18n.translate("command.usage_reset"));
                 return true;
             }
-
-            String type = args[1].toLowerCase();
-
-            if (type.equals("all")) {
+            if (args[1].equalsIgnoreCase("all")) {
                 dataManager.resetAll();
                 sender.sendMessage(i18n.translate("command.reset_all_success"));
-                scoreboardManager.refreshAllScoreboards();
-            } else if (DataManager.SUPPORTED_TYPES.contains(type)) {
-                dataManager.resetLeaderboard(type);
-                sender.sendMessage(i18n.translate("command.reset_one_success", type));
-                scoreboardManager.refreshScoreboard(type);
+                rankingManager.refreshAll();
             } else {
-                sender.sendMessage(i18n.translate("command.unknown_ranking"));
+                LeaderboardType type = LeaderboardType.fromString(args[1]);
+                if (type != null) {
+                    dataManager.resetLeaderboard(type.getId());
+                    sender.sendMessage(i18n.translate("command.reset_one_success", type.getId()));
+                    rankingManager.updateScoreboards(type); // 假设Manager有此方法
+                } else {
+                    sender.sendMessage(i18n.translate("command.unknown_ranking"));
+                }
             }
-
             return true;
         }
 
@@ -74,35 +67,33 @@ public class RankingCommand implements CommandExecutor {
             return true;
         }
 
-        if (leaderboardSettings.isLeaderboardEnabled(args[0].toLowerCase())) {
-            handleLeaderboardCommand(player, args);
+        // 2. 处理通用命令
+        switch (sub) {
+            case "all" -> { rankingDisplay.displayAllRankings(player); return true; }
+            case "my" -> { rankingDisplay.displayPlayerRankings(player); return true; }
+            case "help" -> { rankingDisplay.displayHelpMessage(player); return true; }
+            case "dynamic" -> { rankingManager.toggleDynamic(player); return true; }
+            case "list" -> {
+                if (args.length > 1) rankingDisplay.handleSingleRanking(player, args[1]);
+                else player.sendMessage(i18n.translate("command.usage_list"));
+                return true;
+            }
+        }
+
+        // 3. 处理排行榜开关
+        LeaderboardType type = LeaderboardType.fromString(sub);
+        if (type != null && settings.isLeaderboardEnabled(type.getId())) {
+            rankingManager.toggleScoreboard(player, type);
         } else {
-            handleGeneralCommand(player, args);
+            player.sendMessage(i18n.translate("command.unknown_command"));
         }
 
         return true;
     }
 
-    private void handleGeneralCommand(Player player, String[] args) {
-        switch (args[0].toLowerCase()) {
-            case "all": rankingDisplay.displayAllRankings(player); break;
-            case "my": rankingDisplay.displayPlayerRankings(player); break;
-            case "list":
-                if (args.length > 1) rankingDisplay.handleSingleRanking(player, args[1]);
-                else player.sendMessage(i18n.translate("command.usage_list"));
-                break;
-            case "help": rankingDisplay.displayHelpMessage(player); break;
-            case "dynamic": scoreboardManager.dynamicScoreboard(player); break;
-            default: player.sendMessage(i18n.translate("command.unknown_command")); break;
-        }
-    }
-
-    private void handleLeaderboardCommand(Player player, String[] args) {
-        String type = args[0].toLowerCase();
-        if (!DataManager.SUPPORTED_TYPES.contains(type) || !leaderboardSettings.isLeaderboardEnabled(type)) {
-            player.sendMessage(i18n.translate("command.unknown_ranking"));
-            return;
-        }
-        scoreboardManager.toggleScoreboard(player, type);
+    private boolean checkPerm(CommandSender sender) {
+        if (!(sender instanceof Player) || sender.isOp() || sender.hasPermission("ranking.reset")) return true;
+        sender.sendMessage(i18n.translate("command.no_permission"));
+        return false;
     }
 }

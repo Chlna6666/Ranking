@@ -1,26 +1,25 @@
 package com.chlna6666.ranking.leaderboard;
 
 import com.chlna6666.ranking.config.ConfigManager;
-
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class LeaderboardSettings {
-
     private static LeaderboardSettings instance;
     private final Map<String, Boolean> settingsCache = new HashMap<>();
+    private int topN = 10;
 
     private LeaderboardSettings() {}
 
     public static LeaderboardSettings getInstance() {
-        if (instance == null) {
-            instance = new LeaderboardSettings();
-        }
+        if (instance == null) instance = new LeaderboardSettings();
         return instance;
     }
 
     public void loadSettings(ConfigManager configManager) {
+        // 读取 topN
+        this.topN = configManager.getConfig().getInt("leaderboards.top_n", 10);
+
         settingsCache.put("place", configManager.isLeaderboardEnabled("place"));
         settingsCache.put("destroys", configManager.isLeaderboardEnabled("destroys"));
         settingsCache.put("deads", configManager.isLeaderboardEnabled("deads"));
@@ -32,6 +31,6 @@ public class LeaderboardSettings {
     public boolean isLeaderboardEnabled(String leaderboard) {
         return settingsCache.getOrDefault(leaderboard, false);
     }
-    }
 
-
+    public int getTopN() { return topN; }
+}

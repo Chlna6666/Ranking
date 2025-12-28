@@ -1,23 +1,21 @@
 package com.chlna6666.ranking.datamanager;
 
 import com.chlna6666.ranking.Ranking;
+import com.chlna6666.ranking.enums.LeaderboardType;
 import org.json.simple.JSONObject;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class DataManager {
     protected final Ranking plugin;
 
-    public static final List<String> SUPPORTED_TYPES = List.of(
-            "place",
-            "destroys",
-            "deads",
-            "mobdie",
-            "onlinetime",
-            "break_bedrock"
-    );
+    // 依然保留这个列表供 TabCompleter 使用，但它是通过枚举生成的
+    public static final List<String> SUPPORTED_TYPES = Stream.of(LeaderboardType.values())
+            .map(LeaderboardType::getId)
+            .collect(Collectors.toList());
 
-    // 数据存储对象
     protected JSONObject playersData;
     protected JSONObject placeData;
     protected JSONObject destroysData;
@@ -35,7 +33,6 @@ public abstract class DataManager {
         return "json".equalsIgnoreCase(method);
     }
 
-
     protected void initializeEmptyData() {
         playersData = new JSONObject();
         placeData = new JSONObject();
@@ -46,12 +43,23 @@ public abstract class DataManager {
         breakBedrockData = new JSONObject();
     }
 
-    // 抽象方法
+    // --- 新增通用方法 ---
+    public JSONObject getData(LeaderboardType type) {
+        return switch (type) {
+            case PLACE -> placeData;
+            case DESTROYS -> destroysData;
+            case DEADS -> deadsData;
+            case MOB_DIE -> mobdieData;
+            case ONLINE_TIME -> onlinetimeData;
+            case BREAK_BEDROCK -> breakBedrockData;
+        };
+    }
+    // -------------------
+
     public abstract void saveData(String dataType, JSONObject data);
     public abstract void saveAllData();
     public abstract void shutdownDataManager();
 
-    // 公共数据访问方法
     public JSONObject getPlayersData() { return playersData; }
     public JSONObject getPlaceData() { return placeData; }
     public JSONObject getDestroysData() { return destroysData; }
@@ -60,57 +68,32 @@ public abstract class DataManager {
     public JSONObject getOnlinetimeData() { return onlinetimeData; }
     public JSONObject getBreakBedrockData() { return breakBedrockData; }
 
-    // 需要子类实现的受保护方法
     protected abstract void loadFiles();
 
     public void resetAll() {
-        placeData.clear();
-        destroysData.clear();
-        deadsData.clear();
-        mobdieData.clear();
-        onlinetimeData.clear();
-        breakBedrockData.clear();
-
-        // 保存全部数据
-        saveData("place", placeData);
-        saveData("destroys", destroysData);
-        saveData("deads", deadsData);
-        saveData("mobdie", mobdieData);
-        saveData("onlinetime", onlinetimeData);
-        saveData("break_bedrock", breakBedrockData);
-    }
-
-    public void resetLeaderboard(String type) {
-        switch (type.toLowerCase()) {
-            case "place":
-                placeData.clear();
-                saveData("place", placeData);
-                break;
-            case "destroys":
-                destroysData.clear();
-                saveData("destroys", destroysData);
-                break;
-            case "deads":
-                deadsData.clear();
-                saveData("deads", deadsData);
-                break;
-            case "mobdie":
-                mobdieData.clear();
-                saveData("mobdie", mobdieData);
-                break;
-            case "onlinetime":
-                onlinetimeData.clear();
-                saveData("onlinetime", onlinetimeData);
-                break;
-            case "break_bedrock":
-                breakBedrockData.clear();
-                saveData("break_bedrock", breakBedrockData);
-                break;
-            default:
-                plugin.getLogger().warning("未知的排行榜类型: " + type);
+        for (LeaderboardType type : LeaderboardType.values()) {
+            resetLeaderboard(type.getId());
         }
     }
 
+    public void resetLeaderboard(String typeId) {
+        LeaderboardType type = LeaderboardType.fromString(typeId);
+        if (type == null) {
+            plugin.getLogger().warning("未知的排行榜类型: " + typeId);
+            return;
+        }
 
+        JSONObject empty = new JSONObject();
+        // 更新内存引用
+        switch (type) {
+            case PLACE -> placeData.clear();
+            case DESTROYS -> destroysData.clear();
+            case DEADS -> deadsData.clear();
+            case MOB_DIE -> mobdieData.clear();
+            case ONLINE_TIME -> onlinetimeData.clear();
+            case BREAK_BEDROCK -> breakBedrockData.clear();
+        }
+        // 触发保存
+        saveData(typeId, empty);
+    }
 }
-

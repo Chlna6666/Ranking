@@ -2,18 +2,18 @@ package com.chlna6666.ranking.papi;
 
 import com.chlna6666.ranking.datamanager.DataManager;
 import com.chlna6666.ranking.I18n.I18n;
+import com.chlna6666.ranking.enums.LeaderboardType;
 import com.chlna6666.ranking.leaderboard.LeaderboardSettings;
 import com.chlna6666.ranking.Ranking;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.simple.JSONObject;
+
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
 
 public class PlaceholderAPI extends PlaceholderExpansion {
     private final Ranking plugin;
@@ -27,117 +27,76 @@ public class PlaceholderAPI extends PlaceholderExpansion {
     }
 
     @Override
-    public @NotNull String getAuthor() {
-        return "Chlna6666";
-    }
-
+    public @NotNull String getAuthor() { return "Chlna6666"; }
     @Override
-    public @NotNull String getIdentifier() {
-        return "ranking";
-    }
-
+    public @NotNull String getIdentifier() { return "ranking"; }
     @Override
-    public @NotNull String getVersion() {
-        return "1.0.0";
-    }
-
+    public @NotNull String getVersion() { return "1.0.0"; }
     @Override
-    public boolean persist() {
-        return true;
-    }
-
-    @Override
-    public boolean canRegister() {
-        return true;
-    }
+    public boolean persist() { return true; }
 
     @Override
     public String onRequest(OfflinePlayer player, @NotNull String params) {
-        String leaderboardType = params.split("_")[0].toLowerCase();
-        if (!LeaderboardSettings.getInstance().isLeaderboardEnabled(leaderboardType)) {
-            return ""; // 如果功能被禁用，返回空字符串
+        String[] parts = params.split("_");
+        String typeStr = parts[0].toLowerCase(); // e.g. "place" from "place_1"
+
+        LeaderboardType type = LeaderboardType.fromString(typeStr);
+        if (type == null || !LeaderboardSettings.getInstance().isLeaderboardEnabled(typeStr)) {
+            return "";
         }
 
-        return switch (params.toLowerCase()) {
-            case "place" -> getPlayerCount(player, dataManager.getPlaceData());
-            case "destroys" -> getPlayerCount(player, dataManager.getDestroysData());
-            case "deads" -> getPlayerCount(player, dataManager.getDeadsData());
-            case "mobdie" -> getPlayerCount(player, dataManager.getMobdieData());
-            case "onlinetime" -> getPlayerCount(player, dataManager.getOnlinetimeData());
-            case "break_bedrock" -> getPlayerCount(player, dataManager.getBreakBedrockData());
-            default -> {
-                if (params.startsWith("place_")) {
-                    yield getRankingEntryAsync(player, params, dataManager.getPlaceData());
-                } else if (params.startsWith("destroys_")) {
-                    yield getRankingEntryAsync(player, params, dataManager.getDestroysData());
-                } else if (params.startsWith("deads_")) {
-                    yield getRankingEntryAsync(player, params, dataManager.getDeadsData());
-                } else if (params.startsWith("mobdie_")) {
-                    yield getRankingEntryAsync(player, params, dataManager.getMobdieData());
-                } else if (params.startsWith("onlinetime_")) {
-                    yield getRankingEntryAsync(player, params, dataManager.getOnlinetimeData());
-                } else if (params.startsWith("break_bedrock_")) {
-                    yield getRankingEntryAsync(player, params, dataManager.getBreakBedrockData());
-                }
-                yield null;
-            }
-        };
+        // 1. 获取自己数据: %ranking_place%
+        if (parts.length == 1) {
+            return getPlayerCount(player, dataManager.getData(type));
+        }
+
+        // 2. 获取排行数据: %ranking_place_1%
+        else if (parts.length == 2) {
+            return getRankingEntryAsync(player, params, dataManager.getData(type));
+        }
+
+        return null;
     }
 
     private String getPlayerCount(OfflinePlayer player, JSONObject jsonData) {
         if (jsonData != null && player != null) {
-            String playerUUID = player.getUniqueId().toString();
-            Object playerCount = jsonData.get(playerUUID);
-            if (playerCount != null) {
-                return String.valueOf(playerCount);
-            }
+            Object count = jsonData.get(player.getUniqueId().toString());
+            return count != null ? String.valueOf(count) : "0";
         }
-        return null;
+        return "0";
     }
 
     private String getRankingEntryAsync(OfflinePlayer player, String params, JSONObject jsonData) {
-        CompletableFuture<String> future = CompletableFuture.supplyAsync(() ->
-                getRankingEntry(player, params, jsonData));
-
         try {
-            return future.get(); // 等待异步任务完成并返回结果
+            return CompletableFuture.supplyAsync(() -> getRankingEntry(player, params, jsonData)).get();
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Error occurred while getting ranking entry", e);
-            return null;
+            return "Error";
         }
     }
 
     private String getRankingEntry(OfflinePlayer player, String params, JSONObject jsonData) {
-        if (jsonData != null) {
-            List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(jsonData.entrySet());
-            sortedEntries.sort((a, b) -> {
-                int countA = Integer.parseInt(a.getValue().toString());
-                int countB = Integer.parseInt(b.getValue().toString());
-                return Integer.compare(countB, countA); // 降序排列
-            });
+        if (jsonData == null) return "";
 
-            int totalPlayers = sortedEntries.size();
-            OfflinePlayer currentPlayer = Bukkit.getOfflinePlayer(player.getUniqueId());
+        // 这里可以优化：避免每次请求都排序
+        List<Map.Entry<String, Object>> sorted = new ArrayList<>(jsonData.entrySet());
+        sorted.sort((a, b) -> {
+            long cA = Long.parseLong(a.getValue().toString());
+            long cB = Long.parseLong(b.getValue().toString());
+            return Long.compare(cB, cA);
+        });
 
-            for (int i = 1; i <= totalPlayers; i++) {
-                Map.Entry<String, Object> entry = sortedEntries.get(i - 1);
-                String uuidKey = entry.getKey();
-                Object count = entry.getValue();
+        try {
+            int rank = Integer.parseInt(params.split("_")[1]);
+            if (rank > sorted.size() || rank <= 0) return "---";
 
-                if (params.equalsIgnoreCase(params.split("_")[0] + "_" + i)) {
-                    OfflinePlayer targetPlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuidKey));
-                    if (targetPlayer != null) {
-                        String playerName = targetPlayer.getName();
-                        String countStr = String.valueOf(count);
-                        if (targetPlayer.equals(currentPlayer)) {
-                            countStr += " " + i18n.translate("papi.me");
-                        }
-                        return playerName + ": " + countStr;
-                    }
-                }
-            }
+            Map.Entry<String, Object> entry = sorted.get(rank - 1);
+            OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getKey()));
+            String name = target.getName() != null ? target.getName() : "Unknown";
+            String suffix = target.getUniqueId().equals(player.getUniqueId()) ? " " + i18n.translate("papi.me") : "";
+
+            return name + ": " + entry.getValue() + suffix;
+        } catch (Exception e) {
             return "";
         }
-        return null;
     }
 }

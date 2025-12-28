@@ -1,7 +1,7 @@
 package com.chlna6666.ranking.listener;
 
 import com.chlna6666.ranking.Ranking;
-import com.chlna6666.ranking.utils.Utils;
+import com.chlna6666.ranking.enums.LeaderboardType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BlockPlaceListener implements Listener {
-
     private final Ranking plugin;
     private final Map<World, Map<Location, Player>> pistonCache = new ConcurrentHashMap<>();
 
@@ -26,35 +25,25 @@ public class BlockPlaceListener implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        // 删除 CompletableFuture.runAsync
         Player player = event.getPlayer();
-        Block block = event.getBlock();
 
         if (plugin.getLeaderboardSettings().isLeaderboardEnabled("place")) {
-            if (Utils.isFolia()) {
-                plugin.getServer().getGlobalRegionScheduler().run(plugin, task ->
-                        plugin.handleEvent(player, "place", plugin.getDataManager().getPlaceData(),
-                                plugin.getI18n().translate("sidebar.place")));
-            } else {
-                plugin.handleEvent(player, "place", plugin.getDataManager().getPlaceData(),
-                        plugin.getI18n().translate("sidebar.place"));
-            }
+            plugin.getRankingManager().handleEvent(player, LeaderboardType.PLACE);
         }
 
         if (plugin.getLeaderboardSettings().isLeaderboardEnabled("break_bedrock")) {
+            Block block = event.getBlock();
             if (block.getType() == Material.PISTON || block.getType() == Material.STICKY_PISTON) {
                 if (block.getBlockData() instanceof Directional directional) {
-                    BlockFace pistonFacing = directional.getFacing();
-                    Location bedrockPos = block.getRelative(pistonFacing).getLocation();
-                    if (block.getWorld().getBlockAt(bedrockPos).getType() == Material.BEDROCK) {
-                        pistonCache.computeIfAbsent(block.getWorld(), k -> new ConcurrentHashMap<>()).put(bedrockPos, player);
+                    BlockFace facing = directional.getFacing();
+                    Location target = block.getRelative(facing).getLocation();
+                    if (block.getWorld().getBlockAt(target).getType() == Material.BEDROCK) {
+                        pistonCache.computeIfAbsent(block.getWorld(), k -> new ConcurrentHashMap<>()).put(target, player);
                     }
                 }
             }
         }
     }
 
-    public Map<World, Map<Location, Player>> getPistonCache() {
-        return pistonCache;
-    }
+    public Map<World, Map<Location, Player>> getPistonCache() { return pistonCache; }
 }

@@ -1,126 +1,104 @@
 package com.chlna6666.ranking.scoreboard;
 
-import com.chlna6666.ranking.datamanager.DataManager;
-import com.chlna6666.ranking.I18n.I18n;
 import com.chlna6666.ranking.Ranking;
+import com.chlna6666.ranking.datamanager.DataManager;
+import com.chlna6666.ranking.enums.LeaderboardType;
 import com.chlna6666.ranking.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.json.simple.JSONObject;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class DynamicScoreboard {
     private final Ranking plugin;
     private final DataManager dataManager;
-    private final I18n i18n;
-    private final List<String> allKeys = DataManager.SUPPORTED_TYPES;
+    private final ScoreboardManager scoreboardManager;
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final Map<UUID, Integer> playerIndexes = new HashMap<>();
+    private final Map<UUID, Integer> playerIndexes = new ConcurrentHashMap<>();
 
-    public DynamicScoreboard(Ranking plugin, DataManager dataManager, I18n i18n) {
+    public DynamicScoreboard(Ranking plugin, DataManager dataManager, ScoreboardManager scoreboardManager) {
         this.plugin = plugin;
         this.dataManager = dataManager;
-        this.i18n = i18n;
-        long interval = plugin.getConfig().getLong("dynamic.rotation_interval_minutes", 5L);
+        this.scoreboardManager = scoreboardManager;
 
-        // 调度轮询
+        long interval = plugin.getConfig().getLong("dynamic.rotation_interval_minutes", 5L);
         scheduler.scheduleAtFixedRate(() -> {
-            if (Utils.isFolia()) {
-                Bukkit.getGlobalRegionScheduler().run(plugin, t -> tickAll());
-            } else {
-                Bukkit.getScheduler().runTask(plugin, this::tickAll);
-            }
+            if (Utils.isFolia()) Bukkit.getGlobalRegionScheduler().run(plugin, t -> tick());
+            else Bukkit.getScheduler().runTask(plugin, this::tick);
         }, 0L, interval, TimeUnit.MINUTES);
     }
 
-    public static void shutdown() {
+    public void shutdown() {
         scheduler.shutdownNow();
     }
 
     public void toggle(Player player) {
-        JSONObject pdata = getPlayerData(player);
+        JSONObject pdata = (JSONObject) dataManager.getPlayersData().get(player.getUniqueId().toString());
         if (pdata == null) return;
 
-        boolean enabled = toggleFlag(pdata, "dynamic");
+        boolean enabled = !isFlagSet(pdata, "dynamic");
+
+        // 重置所有静态榜单
+        for (LeaderboardType type : LeaderboardType.values()) {
+            pdata.put(type.getId(), 0L);
+        }
+        pdata.put("dynamic", enabled ? 1L : 0L);
         dataManager.saveData("data", dataManager.getPlayersData());
 
-        String prefix = i18n.translate("sidebar.dynamic") + " ";
-        player.sendMessage(prefix + i18n.translate(enabled ? "command.enabled" : "command.disabled"));
+        player.sendMessage(plugin.getI18n().translate("sidebar.dynamic") + " " +
+                plugin.getI18n().translate(enabled ? "command.enabled" : "command.disabled"));
 
         if (enabled) {
             playerIndexes.put(player.getUniqueId(), 0);
-            resetFlags(pdata, allKeys); // 关闭其他静态
-
-            List<String> enabledKeys = getEnabledKeys();
-            if (!enabledKeys.isEmpty()) {
-                updateFor(player, enabledKeys.get(0));
-            }
+            updateFor(player);
         } else {
             playerIndexes.remove(player.getUniqueId());
-            resetFlags(pdata, allKeys);
-            // 移除计分板
-            plugin.getScoreboardManager().removeBoard(player);
+            scoreboardManager.removeBoard(player);
         }
     }
 
-    private void tickAll() {
-        JSONObject allData = dataManager.getPlayersData();
-        List<String> enabledKeys = getEnabledKeys();
-        if (enabledKeys.isEmpty()) return;
+    private void tick() {
+        List<LeaderboardType> enabledTypes = getEnabledTypes();
+        if (enabledTypes.isEmpty()) return;
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            UUID uuid = player.getUniqueId();
-            JSONObject pdata = (JSONObject) allData.get(uuid.toString());
-            // 检查 dynamic 开关
+            JSONObject pdata = (JSONObject) dataManager.getPlayersData().get(player.getUniqueId().toString());
             if (!isFlagSet(pdata, "dynamic")) continue;
 
-            int idx = playerIndexes.getOrDefault(uuid, 0);
-            String key = enabledKeys.get(idx);
+            int idx = playerIndexes.getOrDefault(player.getUniqueId(), 0);
 
-            updateFor(player, key);
+            // 更新显示
+            LeaderboardType type = enabledTypes.get(idx % enabledTypes.size());
+            render(player, type);
 
-            playerIndexes.put(uuid, (idx + 1) % enabledKeys.size());
+            // 移动索引
+            playerIndexes.put(player.getUniqueId(), (idx + 1) % enabledTypes.size());
         }
     }
 
-    private List<String> getEnabledKeys() {
-        return allKeys.stream()
-                .filter(k -> plugin.getLeaderboardSettings().isLeaderboardEnabled(k))
+    private void updateFor(Player player) {
+        List<LeaderboardType> enabled = getEnabledTypes();
+        if (!enabled.isEmpty()) render(player, enabled.get(0));
+    }
+
+    private void render(Player player, LeaderboardType type) {
+        String title = ScoreboardUtils.getTitle(plugin.getI18n(), type);
+        List<String> lines = ScoreboardUtils.formatLines(dataManager.getData(type), dataManager.getPlayersData(), 10);
+        scoreboardManager.updateBoard(player, title, lines);
+    }
+
+    private List<LeaderboardType> getEnabledTypes() {
+        return Arrays.stream(LeaderboardType.values())
+                .filter(t -> plugin.getLeaderboardSettings().isLeaderboardEnabled(t.getId()))
                 .collect(Collectors.toList());
     }
 
-    private JSONObject getPlayerData(Player player) {
-        return (JSONObject) dataManager.getPlayersData().get(player.getUniqueId().toString());
-    }
-
-    private boolean toggleFlag(JSONObject pdata, String key) {
-        long cur = pdata.getOrDefault(key, 0L) instanceof Number
-                ? ((Number) pdata.get(key)).longValue() : 0L;
-        pdata.put(key, cur == 0 ? 1L : 0L);
-        return cur == 0;
-    }
-
-    private boolean isFlagSet(JSONObject pdata, String key) {
-        Object value = pdata != null ? pdata.getOrDefault(key, 0L) : 0L;
-        return value instanceof Number && ((Number) value).intValue() == 1;
-    }
-
-    private void resetFlags(JSONObject pdata, List<String> keys) {
-        for (String k : keys) pdata.put(k, 0L);
-    }
-
-    private void updateFor(Player player, String key) {
-        String title = ScoreboardUtils.getTitle(i18n, key);
-        JSONObject data = ScoreboardUtils.getData(dataManager, key);
-        // 注意：这里默认取前10名，你也可以从config读取 top_n
-        List<String> lines = ScoreboardUtils.formatLines(data, dataManager.getPlayersData(), 10);
-
-        // 更新
-        plugin.getScoreboardManager().updateBoard(player, title, lines);
+    private boolean isFlagSet(JSONObject json, String key) {
+        if (json == null) return false;
+        Object val = json.getOrDefault(key, 0L);
+        return val instanceof Number && ((Number) val).intValue() == 1;
     }
 }
